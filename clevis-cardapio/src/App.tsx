@@ -1,20 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { SearchBar } from './components/SearchBar';
 import { CategoryNav } from './components/CategoryNav';
 import { ProductCard } from './components/ProductCard';
 import { FloatingCart } from './components/FloatingCart';
 import { CartSidebar } from './components/CartSidebar';
-import { PRODUCTS } from './data/products';
+import { AdminPanel } from './components/AdminPanel'; // Importamos o novo painel
+import { getStoredProducts, getStoredCategories } from './data/products';
+import type { Product, Category } from './data/products';
 import { CartProvider } from './context/CartContext';
 
 export const App: React.FC = () => {
+  const [view, setView] = useState<'client' | 'admin'>('client');
   const [activeCategory, setActiveCategory] = useState('lanches');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
+  
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
 
-  // Filtra de forma inteligente global por busca ou categoria
-  const filteredProducts = PRODUCTS.filter((product) => {
+  // Carrega os dados atualizados sempre que a view do cliente ganha foco
+  useEffect(() => {
+    if (view === 'client') {
+      setProducts(getStoredProducts());
+      setCategories(getStoredCategories());
+    }
+  }, [view]);
+
+  // Se o dono estiver na tela de administração, renderiza apenas o painel administrativo
+  if (view === 'admin') {
+    return <AdminPanel onBack={() => setView('client')} />;
+  }
+
+  // Filtros em tempo real puxando os dados mutáveis do LocalStorage
+  const filteredProducts = products.filter((product) => {
+    // Só exibe no cardápio se o produto não estiver explicitamente pausado pelo admin
+    if (product.disponivel === false) return false;
+
     const matchesSearch = searchQuery
       ? product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.desc.toLowerCase().includes(searchQuery.toLowerCase())
@@ -36,7 +58,7 @@ export const App: React.FC = () => {
 
         <section className="products-section">
           <h2 className="section-title">
-            {searchQuery ? `Resultados para "${searchQuery}"` : activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)}
+            {searchQuery ? `Resultados para "${searchQuery}"` : categories.find(c => c.id === activeCategory)?.label || activeCategory}
           </h2>
           
           <div className="products-grid">
@@ -48,10 +70,20 @@ export const App: React.FC = () => {
           {filteredProducts.length === 0 && (
             <div className="no-results">
               <i className="fa-solid fa-face-frown"></i>
-              <p>Nenhum produto encontrado...</p>
+              <p>Nenhum produto em estoque nesta categoria...</p>
             </div>
           )}
         </section>
+
+        {/* Link Secreto e discreto no rodapé para acessar o painel administrativo */}
+        <footer style={{ marginTop: '50px', textAlign: 'center', opacity: 0.3 }}>
+          <button 
+            onClick={() => setView('admin')} 
+            style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }}
+          >
+            ⚙️ Acessar Sistema de Gerenciamento
+          </button>
+        </footer>
       </main>
 
       <FloatingCart onClick={() => setIsCartOpen(true)} />
