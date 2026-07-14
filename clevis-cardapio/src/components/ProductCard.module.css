@@ -345,3 +345,5 @@
     from { opacity: 0; }
     to { opacity: 1; }
 }
+.priceContainer { display: flex; flex-direction: column; }
+.oldCardPrice { font-size: 0.75rem; color: #777; text-decoration: line-through; margin-bottom: -2px; }

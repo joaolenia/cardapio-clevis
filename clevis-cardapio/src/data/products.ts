@@ -7,6 +7,7 @@ export interface CustomizationOption {
   id: string;
   name: string;
   price: number;
+  categoryLinked: string; // Nova propriedade para vincular (ex: 'lanches', 'pizzas')
 }
 
 export interface Product {
@@ -19,29 +20,16 @@ export interface Product {
   isVariable?: boolean;
   options?: ProductOption[];
   allowCustomization?: boolean;
-  customizationType?: 'lanches' | 'pizzas';
-  disponivel?: boolean; // Nova flag para o dono pausar produtos
+  customizationType?: string;
+  disponivel?: boolean;
+  isPromo?: boolean;      // Nova propriedade para promoção
+  promoPrice?: number;   // Novo preço promocional
 }
 
 export interface Category {
   id: string;
   label: string;
 }
-
-export const ADICIONAIS_LANCHES: CustomizationOption[] = [
-  { id: 'add-hamburguer', name: 'Hambúrguer extra', price: 7.00 },
-  { id: 'add-frango', name: 'Frango em tiras', price: 5.00 },
-  { id: 'add-bacon', name: 'Bacon extra', price: 3.00 },
-  { id: 'add-calabresa', name: 'Calabresa extra', price: 3.00 },
-  { id: 'add-ovo', name: 'Ovo extra', price: 2.00 },
-  { id: 'add-cheddar', name: 'Cheddar extra', price: 2.00 }
-];
-
-export const ADICIONAIS_PIZZAS: CustomizationOption[] = [
-  { id: 'edge-catupiry', name: 'Borda de Catupiry', price: 8.00 },
-  { id: 'edge-cheddar', name: 'Borda de Cheddar', price: 8.00 },
-  { id: 'add-cheese', name: 'Queijo Extra', price: 6.00 }
-];
 
 const INITIAL_CATEGORIES: Category[] = [
   { id: 'lanches', label: '🍔 Lanches' },
@@ -64,21 +52,9 @@ const INITIAL_PRODUCTS: Product[] = [
     allowCustomization: true,
     customizationType: 'lanches',
     disponivel: true
-  },
-  {
-    id: 40,
-    category: 'pizzas',
-    name: 'Pizza Calabresa',
-    price: 45.00,
-    image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop&q=60',
-    desc: 'Molho de tomate caseiro, muçarela artesanal, calabresa fatiada e cebola roxa.',
-    allowCustomization: true,
-    customizationType: 'pizzas',
-    disponivel: true
   }
 ];
 
-// Funções Helpers auxiliares para ler e salvar no localStorage
 export const getStoredProducts = (): Product[] => {
   const data = localStorage.getItem('clevis_products');
   if (!data) {
@@ -103,4 +79,22 @@ export const getStoredCategories = (): Category[] => {
 
 export const saveStoredCategories = (categories: Category[]) => {
   localStorage.setItem('clevis_categories', JSON.stringify(categories));
+};
+
+// Novas funções para ler e salvar os adicionais customizados dinâmicos
+export const getStoredAdditions = (): CustomizationOption[] => {
+  const data = localStorage.getItem('clevis_dynamic_additions');
+  if (!data) {
+    const defaultAdditions: CustomizationOption[] = [
+      { id: 'add-1', name: 'Hambúrguer extra', price: 7.00, categoryLinked: 'lanches' },
+      { id: 'add-2', name: 'Borda de Catupiry', price: 8.00, categoryLinked: 'pizzas' }
+    ];
+    localStorage.setItem('clevis_dynamic_additions', JSON.stringify(defaultAdditions));
+    return defaultAdditions;
+  }
+  return JSON.parse(data);
+};
+
+export const saveStoredAdditions = (additions: CustomizationOption[]) => {
+  localStorage.setItem('clevis_dynamic_additions', JSON.stringify(additions));
 };

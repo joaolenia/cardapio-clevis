@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ADICIONAIS_LANCHES, ADICIONAIS_PIZZAS } from '../data/products';
+import React, { useState, useEffect } from 'react';
+import { getStoredAdditions } from '../data/products';
 import type { Product, CustomizationOption } from '../data/products';
 import { useCart } from '../context/CartContext';
 import styles from './ProductCard.module.css';
@@ -15,11 +15,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [selectedAdditions, setSelectedAdditions] = useState<CustomizationOption[]>([]);
   const [notes, setNotes] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [dynamicAdditions, setDynamicAdditions] = useState<CustomizationOption[]>([]);
 
-  // Mapeia de forma dinâmica o grupo correto de adicionais
-  const currentAdditionsList = product.customizationType === 'pizzas' 
-    ? ADICIONAIS_PIZZAS 
-    : ADICIONAIS_LANCHES;
+  // Carrega apenas os adicionais vinculados à categoria deste produto específico
+  useEffect(() => {
+    if (showModal) {
+      const allAdditions = getStoredAdditions();
+      const filtered = allAdditions.filter(a => a.categoryLinked === product.category);
+      setDynamicAdditions(filtered);
+    }
+  }, [showModal, product.category]);
 
   const handleAddSimple = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -52,6 +57,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     );
   };
 
+  const currentPrice = product.isPromo && product.promoPrice ? product.promoPrice : product.price;
+
   return (
     <>
       <div className={styles.productCard} onClick={() => product.allowCustomization && setShowModal(true)}>
@@ -76,7 +83,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 ))}
               </select>
             ) : (
-              <span className={styles.productPrice}>R$ {product.price.toFixed(2).replace('.', ',')}</span>
+              <div className={styles.priceContainer}>
+                {product.isPromo && <span className={styles.oldCardPrice}>R$ {product.price.toFixed(2).replace('.', ',')}</span>}
+                <span className={styles.productPrice}>R$ {currentPrice.toFixed(2).replace('.', ',')}</span>
+              </div>
             )}
             <button className={styles.addToCartBtn} onClick={handleAddSimple}>
               <i className="fa-solid fa-plus"></i> Add
@@ -91,43 +101,40 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             <div className={styles.modalHeader}>
               <div>
                 <h2 className={styles.modalProdTitle}>{product.name}</h2>
-                <p className={styles.modalProdPrice}>A partir de R$ {product.price.toFixed(2).replace('.', ',')}</p>
+                <p className={styles.modalProdPrice}>R$ {currentPrice.toFixed(2).replace('.', ',')}</p>
               </div>
-              <button className={styles.closeModalBtn} onClick={() => setShowModal(false)}>
-                X
-              </button>
+              <button className={styles.closeModalBtn} onClick={() => setShowModal(false)}><i className="fa-solid fa-xmark"></i></button>
             </div>
             
             <div className={styles.modalBodyScroll}>
-              <div className={styles.customizationSection}>
-                <h3>{product.customizationType === 'pizzas' ? 'Bordas e Adicionais' : 'Adicionais deliciosos'}</h3>
-                <p className={styles.sectionSubtitle}>Personalize o item do seu jeito</p>
-                
-                <div className={styles.additionsList}>
-                  {currentAdditionsList.map((add) => {
-                    const isChecked = !!selectedAdditions.find(item => item.id === add.id);
-                    return (
-                      <div key={add.id} className={styles.additionItem} onClick={() => toggleAddition(add)}>
-                        <div className={styles.addLabel}>
-                          <span className={`${styles.customCheckbox} ${isChecked ? styles.checked : ''}`}>
-                            {isChecked && <i className="fa-solid fa-check"></i>}
-                          </span>
-                          <span>{add.name}</span>
+              {dynamicAdditions.length > 0 && (
+                <div className={styles.customizationSection}>
+                  <h3>Opcionais / Adicionais</h3>
+                  <p className={styles.sectionSubtitle}>Selecione as opções desejadas</p>
+                  <div className={styles.additionsList}>
+                    {dynamicAdditions.map((add) => {
+                      const isChecked = !!selectedAdditions.find(item => item.id === add.id);
+                      return (
+                        <div key={add.id} className={styles.additionItem} onClick={() => toggleAddition(add)}>
+                          <div className={styles.addLabel}>
+                            <span className={`${styles.customCheckbox} ${isChecked ? styles.checked : ''}`}>
+                              {isChecked && <i className="fa-solid fa-check"></i>}
+                            </span>
+                            <span>{add.name}</span>
+                          </div>
+                          <span className={styles.addPrice}>+ R$ {add.price.toFixed(2).replace('.', ',')}</span>
                         </div>
-                        <span className={styles.addPrice}>
-                          {add.price > 0 ? `+ R$ ${add.price.toFixed(2).replace('.', ',')}` : 'Grátis'}
-                        </span>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className={styles.customizationSection}>
                 <h3>Observações</h3>
                 <textarea 
                   className={styles.customNotesInput} 
-                  placeholder="Ex: Sem cebola, caprichar no queijo, massa fina..." 
+                  placeholder="Ex: Sem cebola, caprichar na borda, bem passado..." 
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   maxLength={140}
@@ -142,7 +149,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 <button onClick={() => setQuantity(q => q + 1)}>+</button>
               </div>
               <button className={styles.btnAddModal} onClick={handleAddCustomized}>
-                Adicionar • R$ {((product.price + selectedAdditions.reduce((acc, a) => acc + a.price, 0)) * quantity).toFixed(2).replace('.', ',')}
+                Confirmar • R$ {((currentPrice + selectedAdditions.reduce((acc, a) => acc + a.price, 0)) * quantity).toFixed(2).replace('.', ',')}
               </button>
             </div>
           </div>
