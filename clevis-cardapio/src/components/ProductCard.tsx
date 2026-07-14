@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ADICIONAIS_LANCHES } from '../data/products';
+import { ADICIONAIS_LANCHES, ADICIONAIS_PIZZAS } from '../data/products';
 import type { Product, CustomizationOption } from '../data/products';
 import { useCart } from '../context/CartContext';
 import styles from './ProductCard.module.css';
@@ -15,6 +15,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [selectedAdditions, setSelectedAdditions] = useState<CustomizationOption[]>([]);
   const [notes, setNotes] = useState('');
   const [quantity, setQuantity] = useState(1);
+
+  // Mapeia de forma dinâmica o grupo correto de adicionais
+  const currentAdditionsList = product.customizationType === 'pizzas' 
+    ? ADICIONAIS_PIZZAS 
+    : ADICIONAIS_LANCHES;
 
   const handleAddSimple = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -83,22 +88,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       {showModal && (
         <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
           <div className={styles.customModal} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeaderImg} style={{ backgroundImage: `url(${product.image})` }}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2 className={styles.modalProdTitle}>{product.name}</h2>
+                <p className={styles.modalProdPrice}>A partir de R$ {product.price.toFixed(2).replace('.', ',')}</p>
+              </div>
               <button className={styles.closeModalBtn} onClick={() => setShowModal(false)}>
-                <i className="fa-solid fa-xmark"></i>
+                X
               </button>
             </div>
             
             <div className={styles.modalBodyScroll}>
-              <h2 className={styles.modalProdTitle}>{product.name}</h2>
-              <p className={styles.modalProdDesc}>{product.desc}</p>
-              
               <div className={styles.customizationSection}>
-                <h3>Adicionais deliciosos</h3>
-                <p className={styles.sectionSubtitle}>Adicione um toque extra no seu pedido</p>
+                <h3>{product.customizationType === 'pizzas' ? 'Bordas e Adicionais' : 'Adicionais deliciosos'}</h3>
+                <p className={styles.sectionSubtitle}>Personalize o item do seu jeito</p>
                 
                 <div className={styles.additionsList}>
-                  {ADICIONAIS_LANCHES.map((add) => {
+                  {currentAdditionsList.map((add) => {
                     const isChecked = !!selectedAdditions.find(item => item.id === add.id);
                     return (
                       <div key={add.id} className={styles.additionItem} onClick={() => toggleAddition(add)}>
@@ -108,7 +114,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                           </span>
                           <span>{add.name}</span>
                         </div>
-                        <span className={styles.addPrice}>+ R$ {add.price.toFixed(2).replace('.', ',')}</span>
+                        <span className={styles.addPrice}>
+                          {add.price > 0 ? `+ R$ ${add.price.toFixed(2).replace('.', ',')}` : 'Grátis'}
+                        </span>
                       </div>
                     );
                   })}
@@ -119,7 +127,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 <h3>Observações</h3>
                 <textarea 
                   className={styles.customNotesInput} 
-                  placeholder="Ex: Tirar cebola, maionese à parte, bem passado..." 
+                  placeholder="Ex: Sem cebola, caprichar no queijo, massa fina..." 
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   maxLength={140}
@@ -134,7 +142,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 <button onClick={() => setQuantity(q => q + 1)}>+</button>
               </div>
               <button className={styles.btnAddModal} onClick={handleAddCustomized}>
-                Confirmar • R$ {((product.price + selectedAdditions.reduce((acc, a) => acc + a.price, 0)) * quantity).toFixed(2).replace('.', ',')}
+                Adicionar • R$ {((product.price + selectedAdditions.reduce((acc, a) => acc + a.price, 0)) * quantity).toFixed(2).replace('.', ',')}
               </button>
             </div>
           </div>
