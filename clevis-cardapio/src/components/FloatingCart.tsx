@@ -1,5 +1,6 @@
 import React from 'react';
 import { useCart } from '../context/CartContext';
+import styles from './FloatingCart.module.css';
 
 interface FloatingCartProps {
   onClick: () => void;
@@ -14,14 +15,14 @@ export const FloatingCart: React.FC<FloatingCartProps> = ({ onClick }) => {
   const totalPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
   return (
-    <div className="cart-floating-btn visible" onClick={onClick}>
-      <div className="float-btn-content">
-        <div className="cart-icon-wrapper">
+    <div className={`${styles.cartFloatingBtn} ${styles.visible}`} onClick={onClick}>
+      <div className={styles.floatBtnContent}>
+        <div className={styles.cartIconWrapper}>
           <i className="fa-solid fa-basket-shopping"></i>
-          <span className="cart-count">{totalQuantity}</span>
+          <span className={styles.cartCount}>{totalQuantity}</span>
         </div>
         <span>Ver Sacola</span>
-        <span className="float-total">R$ {totalPrice.toFixed(2).replace('.', ',')}</span>
+        <span className={styles.floatTotal}>R$ {totalPrice.toFixed(2).replace('.', ',')}</span>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import React from 'react';
+import styles from './CategoryNav.module.css';
 
 interface CategoryNavProps {
   activeCategory: string;
@@ -17,11 +18,11 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({ activeCategory, onSele
   ];
 
   return (
-    <section className="categories-nav">
+    <section className={styles.categoriesNav}>
       {categories.map((cat) => (
         <button
           key={cat.id}
-          className={`cat-btn ${activeCategory === cat.id ? 'active' : ''}`}
+          className={`${styles.catBtn} ${activeCategory === cat.id ? styles.active : ''}`}
           onClick={() => onSelectCategory(cat.id)}
         >
           {cat.label}

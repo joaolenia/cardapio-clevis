@@ -1,0 +1,32 @@
+/* SearchBar.module.css */
+.searchContainer {
+    position: relative;
+    width: 100%;
+    margin-bottom: 25px;
+}
+
+.searchIcon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-gray);
+    font-size: 1.1rem;
+}
+
+.searchContainer input {
+    width: 100%;
+    padding: 14px 14px 14px 45px;
+    background: #141414;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    color: white;
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.searchContainer input:focus {
+    border-color: var(--neon-orange);
+    box-shadow: 0 0 10px rgba(255, 94, 0, 0.2);
+}

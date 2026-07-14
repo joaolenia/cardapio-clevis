@@ -1,4 +1,5 @@
 import React from 'react';
+import styles from './SearchBar.module.css';
 
 interface SearchBarProps {
   value: string;
@@ -7,8 +8,8 @@ interface SearchBarProps {
 
 export const SearchBar: React.FC<SearchBarProps> = ({ value, onChange }) => {
   return (
-    <div className="search-container">
-      <i className="fa-solid fa-magnifying-glass search-icon"></i>
+    <div className={styles.searchContainer}>
+      <i className={`fa-solid fa-magnifying-glass ${styles.searchIcon}`}></i>
       <input
         type="text"
         placeholder="O que você quer comer hoje? (Ex: Bacon, Pastéis...)"

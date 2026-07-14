@@ -1,0 +1,54 @@
+/* FloatingCart.module.css */
+.cartFloatingBtn {
+    position: fixed;
+    bottom: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 30px);
+    max-width: 480px;
+    background: linear-gradient(135deg, var(--neon-orange) 0%, #cc4b00 100%);
+    border-radius: 30px;
+    box-shadow: 0 8px 32px rgba(255, 94, 0, 0.4);
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+    z-index: 99;
+    transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.cartFloatingBtn.visible {
+    bottom: 20px;
+}
+
+.floatBtnContent {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.cartIconWrapper {
+    position: relative;
+}
+
+.cartCount {
+    position: absolute;
+    top: -8px;
+    right: -10px;
+    background: #fff;
+    color: var(--neon-orange);
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 50%;
+}
+
+.cartFloatingBtn:global(.bounce) {
+    animation: bounce 0.3s ease;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translate(-50%, 0); }
+    50% { transform: translate(-50%, -8px); }
+}
