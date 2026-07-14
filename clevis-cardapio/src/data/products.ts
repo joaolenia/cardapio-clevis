@@ -2,6 +2,9 @@ export interface ProductOption {
   name: string;
   price: number;
 }
+export interface Sabores {
+  name: string;
+}
 
 export interface CustomizationOption {
   id: string;
@@ -17,8 +20,10 @@ export interface Product {
   image: string;
   desc: string;
   isVariable?: boolean;
+  sabores?: Sabores[]; // Lista de sabores disponíveis (ex: pastéis, porções)
   options?: ProductOption[];
   allowCustomization?: boolean; // Se permite adicionais/observações (ex: lanches, pastéis, porções)
+  allowCustomizationPizza?: boolean; // Se permite adicionais/observações (ex: lanches, pastéis, porções)
 }
 
 // Lista de adicionais genérica para lanches e pastéis extraída dos seus cardápios
@@ -30,6 +35,8 @@ export const ADICIONAIS_LANCHES: CustomizationOption[] = [
   { id: 'add-linguica', name: 'Linguiça extra', price: 3.00 },
   { id: 'add-ovo', name: 'Ovo extra', price: 2.00 },
   { id: 'add-cheddar', name: 'Cheddar extra', price: 2.00 },
+  { id: 'add-picles', name: 'Picles extra', price: 2.00 },
+  { id: 'add-borda', name: 'Borda recheada', price: 10.00 },
   { id: 'add-picles', name: 'Picles extra', price: 2.00 }
 ];
 
@@ -280,6 +287,27 @@ export const PRODUCTS: Product[] = [
                 ],
     image: 'https://images.unsplash.com/photo-1534604973900-c43ab4c2e0ab?w=500&auto=format&fit=crop&q=60',
     desc: 'Calabresa de primeira grelhada com cebola fresca.'
+  },
+    {
+    id: 31,
+    category: 'pizzas',
+    name: 'Pizza',
+    price: 23.00,
+    isVariable: true,
+      allowCustomization: true,
+    sabores: [
+      { name: 'Calabresa' },
+      { name: 'Frango com Catupiry' },
+      { name: 'Portuguesa' },
+      { name: 'Bolonhesa' }
+    ],
+    options: [
+      { name: 'Pequena', price: 80.00 },
+      { name: 'Média', price: 100.00 },
+      { name: 'Grande', price: 120.00 }
+    ],
+    image: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500&auto=format&fit=crop&q=60',
+    desc: 'Batatas fritas sequinhas, crocantes por fora e macias por dentro.'
   },
 
   // BEBIDAS

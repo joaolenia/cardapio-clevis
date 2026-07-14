@@ -14,6 +14,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({ activeCategory, onSele
     { id: 'pasteis', label: 'Pastéis' },
     { id: 'porcoes', label: 'Porções' },
     { id: 'chuleta', label: 'Chuleta' },
+    { id: 'pizzas', label: 'Pizzas' },
     { id: 'bebidas', label: 'Bebidas' }
   ];
 
