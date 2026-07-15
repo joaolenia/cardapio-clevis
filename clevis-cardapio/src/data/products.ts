@@ -12,6 +12,12 @@ export interface CustomizationOption {
   categoryLinked: string;
 }
 
+export interface FlavorOption {
+  id: string;
+  name: string;
+  categoryLinked: string;
+}
+
 export interface Product {
   id: number;
   category: string;
@@ -39,14 +45,13 @@ export const getStoredProducts = async (): Promise<Product[]> => {
     console.error('Erro ao buscar produtos:', error);
     return [];
   }
-  // Mapeamento dos campos do banco para o padrão CamelCase do React
   return data.map((p: any) => ({
     id: p.id,
     category: p.category,
     name: p.name,
     price: Number(p.price),
     image: p.image,
-    desc: p.desc,
+    desc: p.desc || '',
     allowCustomization: p.allow_customization,
     disponivel: p.disponivel,
     isPromo: p.is_promo,
@@ -76,10 +81,31 @@ export const saveStoredProduct = async (product: Product) => {
   return !error;
 };
 
-// EXCLUIR PRODUTO
+// EXCLUIR PRODUTO E SUA FOTO NO STORAGE
 export const deleteStoredProduct = async (id: number) => {
-  const { error } = await supabase.from('products').delete().eq('id', id);
-  return !error;
+  try {
+    const { data: product, error: fetchError } = await supabase
+      .from('products')
+      .select('image')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) console.error('Erro ao buscar imagem do produto para exclusão:', fetchError);
+
+    if (product && product.image && product.image.includes('product-images')) {
+      const urlParts = product.image.split('/product-images/');
+      if (urlParts.length > 1) {
+        const filePath = urlParts[1];
+        await supabase.storage.from('product-images').remove([filePath]);
+      }
+    }
+
+    const { error: deleteError } = await supabase.from('products').delete().eq('id', id);
+    return !deleteError;
+  } catch (err) {
+    console.error('Erro inesperado ao deletar produto:', err);
+    return false;
+  }
 };
 
 // BUSCAR CATEGORIAS
@@ -89,26 +115,20 @@ export const getStoredCategories = async (): Promise<Category[]> => {
   return data.map((c: any) => ({ id: c.id, label: c.label }));
 };
 
-// SALVAR CATEGORIA (Atualizado para mostrar o erro real no console)
+// SALVAR CATEGORIA
 export const saveStoredCategory = async (category: Category) => {
   const { error } = await supabase.from('categories').upsert({
     id: category.id,
     label: category.label
   });
-  
-  if (error) {
-    console.error('ERRO REAL DO SUPABASE AO SALVAR CATEGORIA:', error);
-  }
-  
+  if (error) console.error('ERRO REAL DO SUPABASE AO SALVAR CATEGORIA:', error);
   return !error;
 };
 
-// EXCLUIR CATEGORIA (A exclusão em cascata deve ser ativada na foreign key do Supabase)
+// EXCLUIR CATEGORIA
 export const deleteStoredCategory = async (id: string) => {
   const { error } = await supabase.from('categories').delete().eq('id', id);
-  if (error) {
-    console.error('ERRO REAL DO SUPABASE AO EXCLUIR CATEGORIA:', error);
-  }
+  if (error) console.error('ERRO REAL DO SUPABASE AO EXCLUIR CATEGORIA:', error);
   return !error;
 };
 
@@ -131,9 +151,7 @@ export const saveStoredAddition = async (addition: CustomizationOption) => {
     price: addition.price,
     category_linked: addition.categoryLinked
   });
-    if (error) {
-    console.error('ERRO REAL DO SUPABASE AO SALVAR ADICIONAL:', error);
-  }
+  if (error) console.error('ERRO REAL DO SUPABASE AO SALVAR ADICIONAL:', error);
   return !error;
 };
 
@@ -141,4 +159,56 @@ export const saveStoredAddition = async (addition: CustomizationOption) => {
 export const deleteStoredAddition = async (id: string) => {
   const { error } = await supabase.from('additions').delete().eq('id', id);
   return !error;
+};
+
+// --- MÓDULOS DE SABORES (NOVO) ---
+export const getStoredFlavors = async (): Promise<FlavorOption[]> => {
+  const { data, error } = await supabase.from('flavors').select('*');
+  if (error) return [];
+  return data.map((f: any) => ({
+    id: String(f.id),
+    name: f.name,
+    categoryLinked: f.category_linked
+  }));
+};
+
+export const saveStoredFlavor = async (flavor: Omit<FlavorOption, 'id'>) => {
+  const { error } = await supabase.from('flavors').insert({
+    name: flavor.name,
+    category_linked: flavor.categoryLinked
+  });
+  if (error) console.error('ERRO REAL DO SUPABASE AO SALVAR SABOR:', error);
+  return !error;
+};
+
+export const deleteStoredFlavor = async (id: string) => {
+  const { error } = await supabase.from('flavors').delete().eq('id', id);
+  return !error;
+};
+
+// ENVIAR IMAGEM PARA O STORAGE
+export const uploadProductImage = async (file: File): Promise<string | null> => {
+  try {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+    const filePath = `products/${fileName}`;
+
+    const { error } = await supabase.storage
+      .from('product-images')
+      .upload(filePath, file);
+
+    if (error) {
+      console.error('Erro ao enviar imagem para o Supabase Storage:', error);
+      return null;
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(filePath);
+
+    return publicUrlData.publicUrl;
+  } catch (err) {
+    console.error('Erro inesperado durante o upload da imagem:', err);
+    return null;
+  }
 };
