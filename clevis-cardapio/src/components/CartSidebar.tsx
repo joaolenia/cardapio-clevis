@@ -8,160 +8,183 @@ interface CartSidebarProps {
 }
 
 export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
-  const { cart, changeQuantity, clearCart } = useCart();
-  const [deliveryType, setDeliveryType] = useState<'Entrega' | 'Retirada'>('Entrega');
-  const [name, setName] = useState('');
+  const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart } = useCart();
+  const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup'>('delivery');
   const [address, setAddress] = useState('');
-  const [payment, setPayment] = useState('Pix');
+  const [paymentMethod, setPaymentMethod] = useState('Pix');
 
-  const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const overlayClass = isOpen ? `${styles.cartSidebarOverlay} ${styles.open}` : styles.cartSidebarOverlay;
+  const sidebarClass = isOpen ? `${styles.cartSidebar} ${styles.open}` : styles.cartSidebar;
 
-  const handleSendOrder = () => {
-    if (!name.trim()) {
-      alert('Por favor, insira o seu nome!');
-      return;
-    }
-    if (deliveryType === 'Entrega' && !address.trim()) {
-      alert('Por favor, insira o endereço de entrega completo!');
-      return;
-    }
-
-    let orderText = `*🍔 NOVO PEDIDO - CLEVI'S 🍔*\n\n`;
-    orderText += `*Cliente:* ${name}\n`;
-    orderText += `*Tipo de Pedido:* ${deliveryType === 'Entrega' ? '🛵 Entrega' : '🏪 Retirada no Local'}\n`;
-    
-    if (deliveryType === 'Entrega') {
-      orderText += `*Endereço:* ${address}\n`;
-    }
-    
-    orderText += `*Pagamento:* ${payment}\n\n`;
-    orderText += `*--- ITENS DO PEDIDO ---*\n`;
-
-    cart.forEach(item => {
-      const itemSub = item.price * item.quantity;
-      let additionsText = '';
-      if (item.selectedAdditions.length > 0) {
-        additionsText = `   ↳ _Adicionais: ${item.selectedAdditions.map(a => a.name).join(', ')}_\n`;
-      }
-      let notesText = item.notes ? `   ↳ _Obs: ${item.notes}_\n` : '';
-
-      orderText += `• ${item.quantity}x _${item.name}_ ${item.selectedVariantName ? `(${item.selectedVariantName})` : ''} - (R$ ${itemSub.toFixed(2).replace('.', ',')})\n${additionsText}${notesText}`;
-    });
-
-    orderText += `\n*Total do Pedido:* R$ ${subtotal.toFixed(2).replace('.', ',')}\n`;
-    if (deliveryType === 'Entrega') {
-      orderText += `_Taxa de entrega a combinar no chat_ 🛵`;
+  // Função para gerenciar a diminuição ou remoção automática do item
+  const handleDecreaseQuantity = (itemId: string, currentQty: number) => {
+    if (currentQty <= 1) {
+      removeFromCart(itemId);
     } else {
-      orderText += `_Pedido pronto em 30-40 minutos para retirada_ 🏪`;
+      updateQuantity(itemId, currentQty - 1);
+    }
+  };
+
+  const handleCheckout = () => {
+    if (deliveryType === 'delivery' && !address.trim()) {
+      alert('Por favor, informe o endereço para entrega.');
+      return;
     }
 
-    const phone = "5542998748652";
-    const encodedText = encodeURIComponent(orderText);
-    const whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodedText}`;
+    const orderItemsText = cart.map(item => {
+      let currentPrice = item.product.isPromo && item.product.promoPrice 
+        ? item.product.promoPrice 
+        : item.product.price;
 
+      if (item.selectedVariant !== undefined && item.product.options) {
+        currentPrice = item.product.options[item.selectedVariant].price;
+      }
+
+      const additionsText = item.selectedAdditions.length > 0 
+        ? `\n   + Adicionais: ${item.selectedAdditions.map(a => `${a.name} (+R$ ${a.price.toFixed(2)})`).join(', ')}`
+        : '';
+
+      const notesText = item.notes ? `\n   + Obs: ${item.notes}` : '';
+
+      return `*${item.quantity}x ${item.product.name}* (R$ ${currentPrice.toFixed(2).replace('.', ',')})${additionsText}${notesText}`;
+    }).join('\n\n');
+
+    const subtotal = getCartTotal();
+    const deliveryFeeText = deliveryType === 'delivery' ? 'A combinar' : 'R$ 0,00';
+    const totalText = `R$ ${subtotal.toFixed(2).replace('.', ',')}`;
+
+    const message = encodeURIComponent(
+      `*Novo Pedido - Clevi's*\n\n` +
+      `${orderItemsText}\n\n` +
+      `--------------------------------\n` +
+      `*Tipo:* ${deliveryType === 'delivery' ? 'Entrega' : 'Retirada'}\n` +
+      `*Forma de Pagamento:* ${paymentMethod}\n` +
+      (deliveryType === 'delivery' ? `*Endereço:* ${address}\n` : '') +
+      `*Taxa de Entrega:* ${deliveryFeeText}\n` +
+      `*Total Geral:* ${totalText}`
+    );
+
+    const whatsappUrl = `https://wa.me/5547992497677?text=${message}`;
     window.open(whatsappUrl, '_blank');
     clearCart();
     onClose();
   };
 
   return (
-    <>
-      <div className={`${styles.cartSidebarOverlay} ${isOpen ? styles.open : ''}`} onClick={onClose}></div>
-      <aside className={`${styles.cartSidebar} ${isOpen ? styles.open : ''}`}>
+    <div className={overlayClass} onClick={onClose}>
+      <div className={sidebarClass} onClick={e => e.stopPropagation()}>
         <div className={styles.cartHeader}>
           <h3>Sua Sacola</h3>
-          <button className={styles.closeCart} onClick={onClose}><i className="fa-solid fa-xmark"></i></button>
+          <button className={styles.closeCart} onClick={onClose}>&times;</button>
         </div>
 
         <div className={styles.cartItems}>
           {cart.length === 0 ? (
             <div className={styles.emptyCartMsg}>
-              <i className="fa-solid fa-bag-shopping"></i>
-              <p>Sua sacola está vazia</p>
+              <i className="fa-solid fa-basket-shopping"></i>
+              <p>Sua sacola está vazia...</p>
             </div>
           ) : (
-            cart.map((item) => (
-              <div key={item.cartItemId} className={styles.cartItem}>
-                <div className={styles.itemDetails}>
-                  <span className={styles.itemName}>
-                    {item.name} {item.selectedVariantName ? `(${item.selectedVariantName})` : ''}
-                  </span>
-                  {item.selectedAdditions.map(add => (
-                    <span key={add.id} className={styles.itemSubDesc}>+ {add.name}</span>
-                  ))}
-                  {item.notes && <span className={styles.itemNotes}>Obs: "{item.notes}"</span>}
-                  <span className={styles.itemPrice}>R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}</span>
+            cart.map((item) => {
+              let itemBasePrice = item.product.isPromo && item.product.promoPrice 
+                ? item.product.promoPrice 
+                : item.product.price;
+
+              if (item.selectedVariant !== undefined && item.product.options) {
+                itemBasePrice = item.product.options[item.selectedVariant].price;
+              }
+
+              const additionsSum = item.selectedAdditions.reduce((acc, a) => acc + a.price, 0);
+              const totalLinePrice = (itemBasePrice + additionsSum) * item.quantity;
+
+              return (
+                <div key={item.id} className={styles.cartItem}>
+                  <div className={styles.itemDetails}>
+                    <span className={styles.itemName}>{item.product.name}</span>
+                    <span className={styles.itemPrice}>
+                      R$ {totalLinePrice.toFixed(2).replace('.', ',')}
+                    </span>
+                    {item.selectedAdditions.length > 0 && (
+                      <span className={styles.itemSubDesc}>
+                        + {item.selectedAdditions.map(a => a.name).join(', ')}
+                      </span>
+                    )}
+                    {item.notes && <span className={styles.itemNotes}>{item.notes}</span>}
+                  </div>
+
+                  <div className={styles.qtySelector}>
+                    {/* Alterado para permitir a remoção caso chegue a zero */}
+                    <button onClick={() => handleDecreaseQuantity(item.id, item.quantity)}>-</button>
+                    <span>{item.quantity}</span>
+                    <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
+                  </div>
                 </div>
-                <div className={styles.qtySelector}>
-                  <button onClick={() => changeQuantity(item.cartItemId, -1)}>-</button>
-                  <span>{item.quantity}</span>
-                  <button onClick={() => changeQuantity(item.cartItemId, 1)}>+</button>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
         {cart.length > 0 && (
           <div className={styles.cartFooter}>
-            <div className={styles.deliveryForm}>
-              <h4>Como deseja seu pedido?</h4>
-              <div className={styles.deliveryOptionGroup}>
-                <button
-                  type="button"
-                  className={`${styles.optionBtn} ${deliveryType === 'Entrega' ? styles.active : ''}`}
-                  onClick={() => setDeliveryType('Entrega')}
-                >
-                  <i className="fa-solid fa-motorcycle"></i> Entrega
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.optionBtn} ${deliveryType === 'Retirada' ? styles.active : ''}`}
-                  onClick={() => setDeliveryType('Retirada')}
-                >
-                  <i className="fa-solid fa-store"></i> Retirada
-                </button>
-              </div>
+            <div className={styles.deliveryOptionGroup}>
+              <button 
+                className={`${styles.optionBtn} ${deliveryType === 'delivery' ? styles.active : ''}`}
+                onClick={() => setDeliveryType('delivery')}
+              >
+                Entrega
+              </button>
+              <button 
+                className={`${styles.optionBtn} ${deliveryType === 'pickup' ? styles.active : ''}`}
+                onClick={() => setDeliveryType('pickup')}
+              >
+                Retirada
+              </button>
+            </div>
 
-              <h4>Dados do Cliente</h4>
-              <input type="text" placeholder="Seu Nome" value={name} onChange={(e) => setName(e.target.value)} required />
-              {deliveryType === 'Entrega' && (
-                <input type="text" placeholder="Endereço (Rua, Número, Bairro)" value={address} onChange={(e) => setAddress(e.target.value)} required />
+            <div className={styles.deliveryForm}>
+              {deliveryType === 'delivery' && (
+                <>
+                  <h4>Dados do Cliente</h4>
+                  <input 
+                    type="text" 
+                    value={address} 
+                    onChange={e => setAddress(e.target.value)} 
+                    placeholder="Endereço (Rua, Número, Bairro)" 
+                    required 
+                  />
+                </>
               )}
 
               <h4>Forma de Pagamento</h4>
-              <select value={payment} onChange={(e) => setPayment(e.target.value)}>
+              <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
                 <option value="Pix">Pix</option>
-                <option value="Cartão de Crédito/Débito">Cartão de Crédito/Débito</option>
                 <option value="Dinheiro">Dinheiro</option>
+                <option value="Cartão de Crédito">Cartão de Crédito</option>
+                <option value="Cartão de Débito">Cartão de Débito</option>
               </select>
             </div>
 
             <hr className={styles.divider} />
 
-            <div className={styles.cartSummary}>
-              <div className={styles.summaryLine}>
-                <span>Subtotal</span>
-                <span>R$ {subtotal.toFixed(2).replace('.', ',')}</span>
-              </div>
-              {deliveryType === 'Entrega' && (
-                <div className={`${styles.summaryLine} ${styles.delivery}`}>
-                  <span>Taxa de Entrega</span>
-                  <span>A combinar</span>
-                </div>
-              )}
-              <div className={`${styles.summaryLine} ${styles.total}`}>
-                <span>Total</span>
-                <span>R$ {subtotal.toFixed(2).replace('.', ',')}</span>
-              </div>
+            <div className={styles.summaryLine}>
+              <span>Subtotal</span>
+              <span>R$ {getCartTotal().toFixed(2).replace('.', ',')}</span>
+            </div>
+            <div className={styles.summaryLine}>
+              <span>Taxa de Entrega</span>
+              <span>{deliveryType === 'delivery' ? 'A combinar' : 'Grátis'}</span>
+            </div>
+            <div className={`${styles.summaryLine} ${styles.total}`}>
+              <span>Total</span>
+              <span>R$ {getCartTotal().toFixed(2).replace('.', ',')}</span>
             </div>
 
-            <button className={styles.btnCheckout} onClick={handleSendOrder}>
-              <i className="fa-brands fa-whatsapp"></i> Enviar Pedido via WhatsApp
+            <button className={styles.btnCheckout} onClick={handleCheckout}>
+              Enviar Pedido via WhatsApp
             </button>
           </div>
         )}
-      </aside>
-    </>
+      </div>
+    </div>
   );
 };

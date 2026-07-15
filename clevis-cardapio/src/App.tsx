@@ -77,16 +77,41 @@ export const App: React.FC = () => {
 
   return (
     <CartProvider>
-      {/* Ícone Discreto inserido no topo direito pelo Header ou de forma flutuante absoluta */}
       <div style={{ position: 'absolute', top: '15px', right: '20px', zIndex: 10 }}>
-        <button 
-          onClick={() => setShowLoginModal(true)} 
-          style={{ background: 'rgb(0, 0, 0)', color: '#ffffff', border: '1px solid #555', borderRadius: '4px', cursor: 'pointer', fontSize: '1.2rem', padding: '6px 10px', display: 'flex' }}
-          title="Painel de Gestao"
-        >
-          <i className="fa-solid fa-lock"></i>
-        Admin
-        </button>
+<button 
+  onClick={() => setShowLoginModal(true)} 
+  style={{ 
+    background: '#18191d', 
+    color: '#b1b5c3', 
+    border: '1px solid #232627', 
+    borderRadius: '10px', 
+    cursor: 'pointer', 
+    fontSize: '0.85rem', 
+    fontWeight: '600',
+    padding: '8px 16px', 
+    display: 'inline-flex', 
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0px',
+    letterSpacing: '0.6px',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+  }}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.borderColor = 'var(--neon-orange)';
+    e.currentTarget.style.color = 'var(--neon-orange)';
+    e.currentTarget.style.background = 'rgba(255, 94, 0, 0.02)';
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.borderColor = '#232627';
+    e.currentTarget.style.color = '#b1b5c3';
+    e.currentTarget.style.background = '#18191d';
+  }}
+  title="Painel de Gestao"
+>
+  <i className="fa-solid fa-lock" style={{ fontSize: '0.8rem' }}></i>
+  Admin
+</button>
       </div>
 
       <Header />
