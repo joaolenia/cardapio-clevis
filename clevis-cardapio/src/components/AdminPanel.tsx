@@ -194,7 +194,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     
     const success = await saveStoredAddition(newAdd);
     if (success) {
-      // Recarrega a lista local de adicionais na interface
       const updatedAdds = await getStoredAdditions();
       setAdditions(updatedAdds);
       setAddName('');
@@ -443,7 +442,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
               <tbody>
                 {additions.map(a => (
                   <tr key={a.id}>
-                    <td>export <strong>{a.name}</strong></td>
+                    {/* CORRIGIDO: "export" removido daqui de baixo */}
+                    <td><strong>{a.name}</strong></td>
                     <td>R$ {a.price.toFixed(2)}</td>
                     <td><span className={styles.badgeCategory}>{a.categoryLinked}</span></td>
                     <td>

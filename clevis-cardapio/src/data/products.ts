@@ -89,18 +89,26 @@ export const getStoredCategories = async (): Promise<Category[]> => {
   return data.map((c: any) => ({ id: c.id, label: c.label }));
 };
 
-// SALVAR CATEGORIA
+// SALVAR CATEGORIA (Atualizado para mostrar o erro real no console)
 export const saveStoredCategory = async (category: Category) => {
   const { error } = await supabase.from('categories').upsert({
     id: category.id,
     label: category.label
   });
+  
+  if (error) {
+    console.error('ERRO REAL DO SUPABASE AO SALVAR CATEGORIA:', error);
+  }
+  
   return !error;
 };
 
 // EXCLUIR CATEGORIA (A exclusão em cascata deve ser ativada na foreign key do Supabase)
 export const deleteStoredCategory = async (id: string) => {
   const { error } = await supabase.from('categories').delete().eq('id', id);
+  if (error) {
+    console.error('ERRO REAL DO SUPABASE AO EXCLUIR CATEGORIA:', error);
+  }
   return !error;
 };
 
@@ -123,6 +131,9 @@ export const saveStoredAddition = async (addition: CustomizationOption) => {
     price: addition.price,
     category_linked: addition.categoryLinked
   });
+    if (error) {
+    console.error('ERRO REAL DO SUPABASE AO SALVAR ADICIONAL:', error);
+  }
   return !error;
 };
 
