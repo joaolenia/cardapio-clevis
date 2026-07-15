@@ -1,15 +1,13 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { Product, CustomizationOption } from '../data/products';
 
 export interface CartItem {
-  cartItemId: string; // ID único que combina ID + opcionais
-  id: number;
-  name: string;
-  price: number;
+  id: string; 
+  product: Product;
   quantity: number;
-  selectedVariantName?: string;
+  selectedVariant?: number;
   selectedAdditions: CustomizationOption[];
-  notes?: string;
+  notes: string;
 }
 
 interface CartContextType {
@@ -17,87 +15,90 @@ interface CartContextType {
   addToCart: (
     product: Product, 
     quantity: number, 
-    variantIndex?: number, 
-    additions?: CustomizationOption[], 
+    selectedVariant?: number, 
+    selectedAdditions?: CustomizationOption[], 
     notes?: string
   ) => void;
-  changeQuantity: (cartItemId: string, amount: number) => void;
+  removeFromCart: (itemId: string) => void;
+  updateQuantity: (itemId: string, qty: number) => void;
   clearCart: () => void;
+  getCartTotal: () => number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    const local = localStorage.getItem('clevis_cart');
+    return local ? JSON.parse(local) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('clevis_cart', JSON.stringify(cart));
+  }, [cart]);
 
   const addToCart = (
-    product: Product,
-    quantity: number,
-    variantIndex?: number,
-    additions: CustomizationOption[] = [],
+    product: Product, 
+    quantity: number, 
+    selectedVariant?: number, 
+    selectedAdditions: CustomizationOption[] = [], 
     notes: string = ''
   ) => {
-    setCart((prev) => {
-      let basePrice = product.price;
-      let variantName = '';
+    const itemUniqueId = `${product.id}-${selectedVariant ?? 'base'}-${selectedAdditions.map(a => a.id).sort().join('-')}-${notes}`;
 
-      if (product.isVariable && product.options && variantIndex !== undefined) {
-        const variant = product.options[variantIndex];
-        basePrice = variant.price;
-        variantName = variant.name;
-      }
-
-      // Calcula custo extra de opcionais
-      const additionsPrice = additions.reduce((acc, opt) => acc + opt.price, 0);
-      const finalItemPrice = basePrice + additionsPrice;
-
-      // Cria chave hash para identificar itens perfeitamente iguais e mesclá-los se idênticos
-      const additionsHash = additions.map((a) => a.id).sort().join('-');
-      const cartItemId = `${product.id}-${variantIndex ?? 'default'}-${additionsHash}-${notes.replace(/\s/g, '')}`;
-
-      const existingIndex = prev.findIndex((item) => item.cartItemId === cartItemId);
-
+    setCart((prevCart) => {
+      const existingIndex = prevCart.findIndex(item => item.id === itemUniqueId);
       if (existingIndex > -1) {
-        const updated = [...prev];
-        updated[existingIndex].quantity += quantity;
-        return updated;
+        const newCart = [...prevCart];
+        newCart[existingIndex].quantity += quantity;
+        return newCart;
       }
-
-      return [
-        ...prev,
-        {
-          cartItemId,
-          id: product.id,
-          name: product.name,
-          price: finalItemPrice,
-          quantity,
-          selectedVariantName: variantName || undefined,
-          selectedAdditions: additions,
-          notes: notes.trim() || undefined,
-        },
-      ];
+      return [...prevCart, {
+        id: itemUniqueId,
+        product,
+        quantity,
+        selectedVariant,
+        selectedAdditions,
+        notes
+      }];
     });
   };
 
-  const changeQuantity = (cartItemId: string, amount: number) => {
-    setCart((prev) =>
-      prev
-        .map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + amount } : item))
-        .filter((item) => item.quantity > 0)
-    );
+  const removeFromCart = (itemId: string) => {
+    setCart(prev => prev.filter(item => item.id !== itemId));
+  };
+
+  const updateQuantity = (itemId: string, qty: number) => {
+    setCart(prev => prev.map(item => item.id === itemId ? { ...item, quantity: qty } : item));
   };
 
   const clearCart = () => setCart([]);
 
+  const getCartTotal = () => {
+    return cart.reduce((total, item) => {
+      // CORREÇÃO: Pega o preço correto considerando a promoção ou a variante
+      let basePrice = item.product.isPromo && item.product.promoPrice 
+        ? item.product.promoPrice 
+        : item.product.price;
+
+      if (item.selectedVariant !== undefined && item.product.options) {
+        basePrice = item.product.options[item.selectedVariant].price;
+      }
+
+      const additionsPrice = item.selectedAdditions.reduce((sum, a) => sum + a.price, 0);
+      return total + (basePrice + additionsPrice) * item.quantity;
+    }, 0);
+  };
+
   return (
-    <CartContext.Provider value={{ cart, addToCart, changeQuantity, clearCart }}>
-      {children}
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, getCartTotal }}>
+      ={children}
     </CartContext.Provider>
   );
 };
 
 export const useCart = () => {
   const context = useContext(CartContext);
-  if (!context) throw new Error('useCart deve ser usado dentro de um CartProvider');
+  if (!context) throw new Error('useCart deve ser usado sob um CartProvider');
   return context;
 };

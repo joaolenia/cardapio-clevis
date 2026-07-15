@@ -3,10 +3,10 @@ import { Header } from './components/Header';
 import { SearchBar } from './components/SearchBar';
 import { CategoryNav } from './components/CategoryNav';
 import { ProductCard } from './components/ProductCard';
-import {FloatingCart} from './components/FloatingCart'; // Corrigido para importação padrão (Default)
+import FloatingCart from './components/FloatingCart';
 import { CartSidebar } from './components/CartSidebar';
 import { AdminPanel } from './components/AdminPanel';
-import { getStoredProducts, getStoredCategories } from './data/products';
+import { getStoredProducts, getStoredCategories, authenticateManager } from './data/products';
 import type { Product, Category } from './data/products';
 import { CartProvider } from './context/CartContext';
 
@@ -15,6 +15,12 @@ export const App: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
+
+  // Estados de Autenticação do Painel
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [authError, setAuthError] = useState('');
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -27,7 +33,6 @@ export const App: React.FC = () => {
         setProducts(prods);
         setCategories(cats);
         
-        // Define a primeira categoria do banco como ativa por padrão
         if (cats.length > 0 && !activeCategory) {
           setActiveCategory(cats[0].id);
         }
@@ -36,15 +41,27 @@ export const App: React.FC = () => {
     loadData();
   }, [view]);
 
-  // Filtra produtos promocionais disponíveis para a seção de destaques
   const promoProducts = products.filter(p => p.isPromo && p.disponivel !== false);
 
-  // Se o dono estiver na tela de administração, renderiza apenas o painel administrativo
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+
+    const isValid = await authenticateManager(username, password);
+    if (isValid) {
+      setShowLoginModal(false);
+      setUsername('');
+      setPassword('');
+      setView('admin');
+    } else {
+      setAuthError('Credenciais incorretas.');
+    }
+  };
+
   if (view === 'admin') {
     return <AdminPanel onBack={() => setView('client')} />;
   }
 
-  // Filtros em tempo real puxando os dados mutáveis do Supabase
   const filteredProducts = products.filter((product) => {
     if (product.disponivel === false) return false;
 
@@ -60,11 +77,22 @@ export const App: React.FC = () => {
 
   return (
     <CartProvider>
+      {/* Ícone Discreto inserido no topo direito pelo Header ou de forma flutuante absoluta */}
+      <div style={{ position: 'absolute', top: '15px', right: '20px', zIndex: 10 }}>
+        <button 
+          onClick={() => setShowLoginModal(true)} 
+          style={{ background: 'rgb(0, 0, 0)', color: '#ffffff', border: '1px solid #555', borderRadius: '4px', cursor: 'pointer', fontSize: '1.2rem', padding: '6px 10px', display: 'flex' }}
+          title="Painel de Gestao"
+        >
+          <i className="fa-solid fa-lock"></i>
+        Admin
+        </button>
+      </div>
+
       <Header />
       <main className="container">
         <SearchBar value={searchQuery} onChange={setSearchQuery} />
 
-        {/* AREA DE DESTAQUES PROMOCIONAIS (Fica oculta se houver busca ativa) */}
         {!searchQuery && promoProducts.length > 0 && (
           <div className="promo-highlights-section" style={{ marginBottom: '35px' }}>
             <h2 style={{ fontSize: '1.4rem', color: 'var(--neon-orange)', marginBottom: '15px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -107,20 +135,39 @@ export const App: React.FC = () => {
             </div>
           )}
         </section>
-
-        {/* Link Secreto no rodapé para acessar o painel administrativo */}
-        <footer style={{ marginTop: '50px', paddingBottom: '40px', textAlign: 'center', opacity: 0.3 }}>
-          <button
-            onClick={() => setView('admin')}
-            style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }}
-          >
-            Acessar Sistema de Gerenciamento
-          </button>
-        </footer>
       </main>
 
       <FloatingCart onClick={() => setIsCartOpen(true)} />
       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+
+      {/* POPUP DE AUTENTICAÇÃO GERENCIAL */}
+      {showLoginModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div style={{ background: '#18191d', border: '1px solid #232627', padding: '30px', borderRadius: '16px', width: '100%', maxWidth: '360px', fontFamily: 'sans-serif' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, color: '#f4f5f6' }}>Acesso Restrito</h3>
+              <button onClick={() => { setShowLoginModal(false); setAuthError(''); }} style={{ background: 'transparent', border: 'none', color: '#777e90', fontSize: '1.2rem', cursor: 'pointer' }}>&times;</button>
+            </div>
+            
+            <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.8rem', color: '#b1b5c3', fontWeight: 600 }}>Usuario</label>
+                <input type="text" value={username} onChange={e => setUsername(e.target.value)} style={{ background: '#141416', border: '1px solid #232627', padding: '12px', borderRadius: '8px', color: 'white' }} required />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.8rem', color: '#b1b5c3', fontWeight: 600 }}>Senha</label>
+                <input type="password" value={password} onChange={e => setPassword(e.target.value)} style={{ background: '#141416', border: '1px solid #232627', padding: '12px', borderRadius: '8px', color: 'white' }} required />
+              </div>
+
+              {authError && <p style={{ color: '#ef4444', fontSize: '0.8rem', margin: 0 }}>{authError}</p>}
+
+              <button type="submit" style={{ background: 'var(--neon-orange, #ff5e00)', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', marginTop: '10px' }}>
+                Entrar no Sistema
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </CartProvider>
   );
 };

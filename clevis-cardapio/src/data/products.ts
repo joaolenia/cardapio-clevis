@@ -212,3 +212,22 @@ export const uploadProductImage = async (file: File): Promise<string | null> => 
     return null;
   }
 };
+// Adicionar ao final do arquivo src/data/products.ts
+
+export const authenticateManager = async (usernameInput: string, passwordInput: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('manager_auth')
+      .select('*')
+      .eq('username', usernameInput.trim())
+      .eq('password', passwordInput.trim())
+      .limit(1); 
+    if (error || !data || data.length === 0) {
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Erro ao processar autenticacao:', err);
+    return false;
+  }
+};

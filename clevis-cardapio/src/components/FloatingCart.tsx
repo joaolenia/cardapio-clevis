@@ -7,12 +7,14 @@ interface FloatingCartProps {
 }
 
 export const FloatingCart: React.FC<FloatingCartProps> = ({ onClick }) => {
-  const { cart } = useCart();
+  // Importamos getCartTotal que já calcula preços normais, promocionais e adicionais corretamente
+  const { cart, getCartTotal } = useCart();
 
   if (cart.length === 0) return null;
 
+  // Calcula o total de itens somando a quantidade de cada um
   const totalQuantity = cart.reduce((acc, item) => acc + item.quantity, 0);
-  const totalPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const totalPrice = getCartTotal();
 
   return (
     <div className={`${styles.cartFloatingBtn} ${styles.visible}`} onClick={onClick}>
@@ -27,3 +29,5 @@ export const FloatingCart: React.FC<FloatingCartProps> = ({ onClick }) => {
     </div>
   );
 };
+
+export default FloatingCart;
