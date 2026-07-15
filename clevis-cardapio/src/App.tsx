@@ -15,16 +15,21 @@ export const App: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState('lanches');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
-  
+
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
 
-  // Carrega os dados atualizados sempre que a view do cliente ganha foco
+
   useEffect(() => {
-    if (view === 'client') {
-      setProducts(getStoredProducts());
-      setCategories(getStoredCategories());
-    }
+    const loadData = async () => {
+      if (view === 'client') {
+        const prods = await getStoredProducts();
+        const cats = await getStoredCategories();
+        setProducts(prods);
+        setCategories(cats);
+      }
+    };
+    loadData();
   }, [view]);
 
   // Se o dono estiver na tela de administração, renderiza apenas o painel administrativo
@@ -39,7 +44,7 @@ export const App: React.FC = () => {
 
     const matchesSearch = searchQuery
       ? product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.desc.toLowerCase().includes(searchQuery.toLowerCase())
+      product.desc.toLowerCase().includes(searchQuery.toLowerCase())
       : true;
 
     const matchesCategory = searchQuery ? true : product.category === activeCategory;
@@ -60,7 +65,7 @@ export const App: React.FC = () => {
           <h2 className="section-title">
             {searchQuery ? `Resultados para "${searchQuery}"` : categories.find(c => c.id === activeCategory)?.label || activeCategory}
           </h2>
-          
+
           <div className="products-grid">
             {filteredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
@@ -77,8 +82,8 @@ export const App: React.FC = () => {
 
         {/* Link Secreto e discreto no rodapé para acessar o painel administrativo */}
         <footer style={{ marginTop: '50px', textAlign: 'center', opacity: 0.3 }}>
-          <button 
-            onClick={() => setView('admin')} 
+          <button
+            onClick={() => setView('admin')}
             style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }}
           >
             ⚙️ Acessar Sistema de Gerenciamento
