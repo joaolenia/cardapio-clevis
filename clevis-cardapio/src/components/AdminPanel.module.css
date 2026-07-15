@@ -273,14 +273,19 @@
 .btnDelete:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.05); }
 
 .btnDeleteTableInline {
-    background: transparent;
-    border: none;
-    color: #777e90;
+    background: #232627;
+    border: 1px solid #353945;
+    color: #b1b5c3;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     cursor: pointer;
-    padding: 4px;
-    transition: color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
 }
-.btnDeleteTableInline:hover { color: #ef4444; }
+.btnDeleteTableInline:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.05);}
 
 .rowDisabled {
     opacity: 0.4;

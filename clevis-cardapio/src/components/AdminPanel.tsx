@@ -357,6 +357,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                         </button>
                         <button className={styles.btnDelete} onClick={() => handleDeleteProduct(p.id)} title="Excluir">
                           <i className="fa-solid fa-trash-can"></i>
+                          X
                         </button>
                       </div>
                     </td>
@@ -474,7 +475,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
           <label className={styles.switchLabel}>
             <input type="checkbox" checked={allowCustom} onChange={e => setAllowCustom(e.target.checked)} />
             <div>
-              <strong>Vincular adicionais customizados?</strong>
+              <strong>Vincular adicionais e sabores customizados?</strong>
               <p>Habilita a listagem de complementos criados para esta categoria no carrinho</p>
             </div>
           </label>
@@ -556,6 +557,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                       <td style={{ textAlign: 'center' }}>
                         <button className={styles.btnDeleteTableInline} onClick={() => handleDeleteAddition(a.id)}>
                           <i className="fa-solid fa-trash-can"></i>
+                          X
                         </button>
                       </td>
                     </tr>
@@ -601,6 +603,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                       <td style={{ textAlign: 'center' }}>
                         <button className={styles.btnDeleteTableInline} onClick={() => handleDeleteFlavor(f.id)}>
                           <i className="fa-solid fa-trash-can"></i>
+                          X
                         </button>
                       </td>
                     </tr>
