@@ -28,8 +28,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
   const [varName, setVarName] = useState('');
   const [varPrice, setVarPrice] = useState('');
 
-  // Outros estados
+  // Estados do Formulário de Categorias
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [catName, setCatName] = useState('');
+
+  // Estados do Formulário de Adicionais
   const [addName, setAddName] = useState('');
   const [addPrice, setAddPrice] = useState('');
   const [addCategoryLinked, setAddCategoryLinked] = useState('');
@@ -105,16 +108,56 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     }
   };
 
+  // --- LÓGICA DE CATEGORIAS (CRIAR, EDITAR E EXCLUIR EM CASCATA) ---
   const handleSaveCategory = (e: React.FormEvent) => {
     e.preventDefault();
     if (!catName.trim()) return;
-    const newCat: Category = {
-      id: catName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-'),
-      label: catName
-    };
-    saveStoredCategories([...categories, newCat]);
+
+    if (editingCategoryId) {
+      // Editar categoria existente
+      const updatedCategories = categories.map(c => 
+        c.id === editingCategoryId ? { ...c, label: catName } : c
+      );
+      setCategories(updatedCategories);
+      saveStoredCategories(updatedCategories);
+    } else {
+      // Criar nova categoria
+      const newCat: Category = {
+        id: catName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-'),
+        label: catName
+      };
+      saveStoredCategories([...categories, newCat]);
+    }
+    
     setCatName('');
+    setEditingCategoryId(null);
     setActiveTab('list');
+  };
+
+  const handleEditCategory = (c: Category) => {
+    setEditingCategoryId(c.id);
+    setCatName(c.label);
+    setActiveTab('category_form');
+  };
+
+  const handleDeleteCategory = (id: string) => {
+    const confirmMsg = 'ATENÇÃO: Deletar esta categoria irá apagar permanentemente todos os produtos e adicionais vinculados a ela! Deseja continuar?';
+    if (window.confirm(confirmMsg)) {
+      // 1. Apaga a categoria
+      const updatedCategories = categories.filter(c => c.id !== id);
+      setCategories(updatedCategories);
+      saveStoredCategories(updatedCategories);
+
+      // 2. Apaga em cascata todos os produtos daquela categoria
+      const updatedProducts = products.filter(p => p.category !== id);
+      setProducts(updatedProducts);
+      saveStoredProducts(updatedProducts);
+
+      // 3. Apaga em cascata todos os adicionais daquela categoria
+      const updatedAdditions = additions.filter(a => a.categoryLinked !== id);
+      setAdditions(updatedAdditions);
+      saveStoredAdditions(updatedAdditions);
+    }
   };
 
   const handleSaveAddition = (e: React.FormEvent) => {
@@ -155,47 +198,79 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
         <button className={activeTab === 'list' ? styles.navActive : ''} onClick={() => setActiveTab('list')}>📦 Itens</button>
         <button className={activeTab === 'product_form' ? styles.navActive : ''} onClick={() => { resetProductForm(); setActiveTab('product_form'); }}>➕ Novo Item</button>
         <button className={activeTab === 'additions_form' ? styles.navActive : ''} onClick={() => setActiveTab('additions_form')}>✨ Adicionais / Sabores</button>
-        <button className={activeTab === 'category_form' ? styles.navActive : ''} onClick={() => setActiveTab('category_form')}>📁 Categorias</button>
+        <button className={activeTab === 'category_form' ? styles.navActive : ''} onClick={() => { setEditingCategoryId(null); setCatName(''); setActiveTab('category_form'); }}>📁 Categorias</button>
       </div>
 
       {activeTab === 'list' && (
-        <div className={styles.tableResponsive}>
-          <table className={styles.adminTable}>
-            <thead>
-              <tr>
-                <th>Foto</th>
-                <th>Nome</th>
-                <th>Categoria</th>
-                <th>Preço</th>
-                <th>Status</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map(p => (
-                <tr key={p.id} className={p.disponivel === false ? styles.rowDisabled : ''}>
-                  <td><img src={p.image} alt={p.name} className={styles.tableImg} /></td>
-                  <td>
-                    <strong>{p.name}</strong>
-                    {p.isPromo && <span className={styles.promoBadge}>PROMO</span>}
-                  </td>
-                  <td><span className={styles.badgeCategory}>{p.category}</span></td>
-                  <td>R$ {(p.isPromo && p.promoPrice ? p.promoPrice : p.price).toFixed(2).replace('.', ',')}</td>
-                  <td>
-                    <button className={`${styles.btnStatus} ${p.disponivel !== false ? styles.statusActive : styles.statusPaused}`} onClick={() => handleToggleStatus(p.id)}>
-                      {p.disponivel !== false ? 'Ativo' : 'Pausado'}
-                    </button>
-                  </td>
-                  <td>
-                    <div className={styles.actionGroup}>
-                      <button className={styles.btnEdit} onClick={() => handleEditProduct(p)}><i className="fa-solid fa-pen"></i></button>
-                      <button className={styles.btnDelete} onClick={() => handleDeleteProduct(p.id)}><i className="fa-solid fa-trash"></i></button>
-                    </div>
-                  </td>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '35px' }}>
+          {/* Tabela de Produtos */}
+          <div className={styles.tableResponsive}>
+            <h4 style={{ padding: '15px', margin: 0, color: 'var(--neon-orange)' }}>Gerenciar Produtos</h4>
+            <table className={styles.adminTable}>
+              <thead>
+                <tr>
+                  <th>Foto</th>
+                  <th>Nome</th>
+                  <th>Categoria</th>
+                  <th>Preço</th>
+                  <th>Status</th>
+                  <th>Ações</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {products.map(p => (
+                  <tr key={p.id} className={p.disponivel === false ? styles.rowDisabled : ''}>
+                    <td><img src={p.image} alt={p.name} className={styles.tableImg} /></td>
+                    <td>
+                      <strong>{p.name}</strong>
+                      {p.isPromo && <span className={styles.promoBadge}>PROMO</span>}
+                    </td>
+                    <td><span className={styles.badgeCategory}>{p.category}</span></td>
+                    <td>R$ {(p.isPromo && p.promoPrice ? p.promoPrice : p.price).toFixed(2).replace('.', ',')}</td>
+                    <td>
+                      <button className={`${styles.btnStatus} ${p.disponivel !== false ? styles.statusActive : styles.statusPaused}`} onClick={() => handleToggleStatus(p.id)}>
+                        {p.disponivel !== false ? 'Ativo' : 'Pausado'}
+                      </button>
+                    </td>
+                    <td>
+                      <div className={styles.actionGroup}>
+                        <button className={styles.btnEdit} onClick={() => handleEditProduct(p)} title="Editar Produto"><i className="fa-solid fa-pen"></i></button>
+                        <button className={styles.btnDelete} onClick={() => handleDeleteProduct(p.id)} title="Excluir Produto"><i className="fa-solid fa-trash"></i></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* NOVA: Tabela para Editar e Excluir Categorias */}
+          <div className={styles.tableResponsive}>
+            <h4 style={{ padding: '15px', margin: 0, color: 'var(--neon-yellow)' }}>Gerenciar Categorias</h4>
+            <table className={styles.adminTable}>
+              <thead>
+                <tr>
+                  <th>Nome da Categoria</th>
+                  <th>Slug de Identificação</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categories.map(c => (
+                  <tr key={c.id}>
+                    <td><strong>{c.label}</strong></td>
+                    <td><code>{c.id}</code></td>
+                    <td>
+                      <div className={styles.actionGroup}>
+                        <button className={styles.btnEdit} onClick={() => handleEditCategory(c)} title="Editar Nome"><i className="fa-solid fa-pen"></i></button>
+                        <button className={styles.btnDelete} onClick={() => handleDeleteCategory(c.id)} title="Excluir Categoria e Produtos"><i className="fa-solid fa-trash"></i></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -259,7 +334,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
               <div className={styles.variantInputs}>
                 <input type="text" value={varName} onChange={e => setVarName(e.target.value)} placeholder="Ex: Grande (8 pedaços)" />
                 <input type="number" step="0.01" value={varPrice} onChange={e => setVarPrice(e.target.value)} placeholder="Preço" />
-                <button type="button" onClick={handleAddVariant}>+</button>
+                <button type="button" onClick={handleAddVariant}><i className="fa-solid fa-plus"></i></button>
               </div>
               <ul className={styles.variantList}>
                 {variants.map((v, i) => (
@@ -268,7 +343,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
               </ul>
             </div>
           )}
-          <button type="submit" className={styles.btnSave}>Confirmar e Salvar</button>
+          <button type="submit" className={styles.btnSave}><i className="fa-solid fa-floppy-disk"></i> Confirmar e Salvar</button>
         </form>
       )}
 
@@ -290,7 +365,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                 {categories.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
               </select>
             </div>
-            <button type="submit" className={styles.btnSave}>Adicionar Opcional</button>
+            <button type="submit" className={styles.btnSave}><i className="fa-solid fa-plus"></i> Adicionar Opcional</button>
           </form>
 
           <div style={{ flex: '2', minWidth: '320px' }}>
@@ -309,7 +384,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                     <td><strong>{a.name}</strong></td>
                     <td>R$ {a.price.toFixed(2)}</td>
                     <td><span className={styles.badgeCategory}>{a.categoryLinked}</span></td>
-                    <td><button className={styles.btnDelete} onClick={() => handleDeleteAddition(a.id)}><i className="fa-solid fa-trash"></i></button></td>
+                    <td><button className={styles.btnDelete} onClick={() => handleDeleteAddition(a.id)} title="Excluir Opcional"><i className="fa-solid fa-trash"></i></button></td>
                   </tr>
                 ))}
               </tbody>
@@ -320,12 +395,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
 
       {activeTab === 'category_form' && (
         <form className={styles.adminForm} onSubmit={handleSaveCategory}>
-          <h3>📁 Nova Categoria</h3>
+          <h3>{editingCategoryId ? '📝 Editar Categoria' : '📁 Nova Categoria'}</h3>
           <div className={styles.formGroup}>
             <label>Nome da Categoria</label>
             <input type="text" value={catName} onChange={e => setCatName(e.target.value)} placeholder="Ex: 🍕 Pizzas Especiais" required />
           </div>
-          <button type="submit" className={styles.btnSave}>Criar Categoria</button>
+          <button type="submit" className={styles.btnSave}>
+            <i className="fa-solid fa-floppy-disk"></i> {editingCategoryId ? 'Salvar Alteração' : 'Criar Categoria'}
+          </button>
         </form>
       )}
     </div>
