@@ -17,13 +17,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [quantity, setQuantity] = useState(1);
   const [dynamicAdditions, setDynamicAdditions] = useState<CustomizationOption[]>([]);
 
-  // Carrega apenas os adicionais vinculados à categoria deste produto específico
+  // CORREÇÃO: Carrega os adicionais de forma assíncrona para evitar travar a tela
   useEffect(() => {
-    if (showModal) {
-      const allAdditions = getStoredAdditions();
-      const filtered = allAdditions.filter(a => a.categoryLinked === product.category);
-      setDynamicAdditions(filtered);
-    }
+    const loadAdditions = async () => {
+      if (showModal) {
+        const allAdditions = await getStoredAdditions();
+        if (Array.isArray(allAdditions)) {
+          const filtered = allAdditions.filter(a => a.categoryLinked === product.category);
+          setDynamicAdditions(filtered);
+        }
+      }
+    };
+    loadAdditions();
   }, [showModal, product.category]);
 
   const handleAddSimple = (e: React.MouseEvent) => {
@@ -67,7 +72,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
         <div className={styles.productInfo}>
           <h3 className={styles.productName}>{product.name}</h3>
-          <p className={styles.productDesc}>{product.desc}</p>
+          {product.desc && <p className={styles.productDesc}>{product.desc}</p>}
           <div className={styles.productMeta}>
             {product.isVariable && product.options ? (
               <select
@@ -89,7 +94,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               </div>
             )}
             <button className={styles.addToCartBtn} onClick={handleAddSimple}>
-              <i className="fa-solid fa-plus"></i> Add
+              Add
             </button>
           </div>
         </div>
@@ -103,14 +108,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 <h2 className={styles.modalProdTitle}>{product.name}</h2>
                 <p className={styles.modalProdPrice}>R$ {currentPrice.toFixed(2).replace('.', ',')}</p>
               </div>
-              <button className={styles.closeModalBtn} onClick={() => setShowModal(false)}><i className="fa-solid fa-xmark"></i></button>
+              <button className={styles.closeModalBtn} onClick={() => setShowModal(false)}>&times;</button>
             </div>
             
             <div className={styles.modalBodyScroll}>
               {dynamicAdditions.length > 0 && (
                 <div className={styles.customizationSection}>
-                  <h3>Opcionais / Adicionais</h3>
-                  <p className={styles.sectionSubtitle}>Selecione as opções desejadas</p>
+                  <h3>Adicionais</h3>
                   <div className={styles.additionsList}>
                     {dynamicAdditions.map((add) => {
                       const isChecked = !!selectedAdditions.find(item => item.id === add.id);
@@ -118,7 +122,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                         <div key={add.id} className={styles.additionItem} onClick={() => toggleAddition(add)}>
                           <div className={styles.addLabel}>
                             <span className={`${styles.customCheckbox} ${isChecked ? styles.checked : ''}`}>
-                              {isChecked && <i className="fa-solid fa-check"></i>}
+                              {isChecked && '✓'}
                             </span>
                             <span>{add.name}</span>
                           </div>
@@ -131,10 +135,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               )}
 
               <div className={styles.customizationSection}>
-                <h3>Observações</h3>
+                <h3>Observacoes</h3>
                 <textarea 
                   className={styles.customNotesInput} 
-                  placeholder="Ex: Sem cebola, caprichar na borda, bem passado..." 
+                  placeholder="Ex: Sem cebola, bem passado..." 
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   maxLength={140}

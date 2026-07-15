@@ -1,22 +1,13 @@
 import React from 'react';
+import type { Category } from '../data/products';
 import styles from './CategoryNav.module.css';
 
 interface CategoryNavProps {
+  categories: Category[]; // Modificado para receber do banco dinamicamente
   activeCategory: string;
-  onSelectCategory: (category: string) => void;
+  onSelectCategory: (id: string) => void;
 }
-
-export const CategoryNav: React.FC<CategoryNavProps> = ({ activeCategory, onSelectCategory }) => {
-  const categories = [
-    { id: 'lanches', label: 'Lanches' },
-    { id: 'combos', label: 'Combos' },
-    { id: 'tabuas', label: 'Tábuas' },
-    { id: 'pasteis', label: 'Pastéis' },
-    { id: 'porcoes', label: 'Porções' },
-    { id: 'chuleta', label: 'Chuleta' },
-    { id: 'pizzas', label: 'Pizzas' },
-    { id: 'bebidas', label: 'Bebidas' }
-  ];
+export const CategoryNav: React.FC<CategoryNavProps> = ({ categories, activeCategory, onSelectCategory }) => {
 
   return (
     <section className={styles.categoriesNav}>

@@ -57,8 +57,13 @@ export const App: React.FC = () => {
       <Header />
       <main className="container">
         <SearchBar value={searchQuery} onChange={setSearchQuery} />
+        {/* Altere essa linha no seu src/App.tsx para ficar exatamente assim: */}
         {!searchQuery && (
-          <CategoryNav activeCategory={activeCategory} onSelectCategory={setActiveCategory} />
+          <CategoryNav
+            categories={categories} // Agora passa as categorias do Supabase
+            activeCategory={activeCategory}
+            onSelectCategory={setActiveCategory}
+          />
         )}
 
         <section className="products-section">
