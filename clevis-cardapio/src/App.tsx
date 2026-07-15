@@ -16,13 +16,10 @@ export const App: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
-
-  // Estados de Autenticação do Painel
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
-
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
 
@@ -33,10 +30,7 @@ export const App: React.FC = () => {
         const cats = await getStoredCategories();
         setProducts(prods);
         setCategories(cats);
-        
-        if (cats.length > 0 && !activeCategory) {
-          setActiveCategory(cats[0].id);
-        }
+        if (cats.length > 0 && !activeCategory) setActiveCategory(cats[0].id);
       }
     };
     loadData();
@@ -47,7 +41,6 @@ export const App: React.FC = () => {
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
-
     const isValid = await authenticateManager(username, password);
     if (isValid) {
       setShowLoginModal(false);
@@ -59,116 +52,75 @@ export const App: React.FC = () => {
     }
   };
 
-  if (view === 'admin') {
-    return <AdminPanel onBack={() => setView('client')} />;
-  }
+  if (view === 'admin') return <AdminPanel onBack={() => setView('client')} />;
 
   const filteredProducts = products.filter((product) => {
     if (product.disponivel === false) return false;
-
     const matchesSearch = searchQuery
       ? product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.desc.toLowerCase().includes(searchQuery.toLowerCase())
       : true;
-
     const matchesCategory = searchQuery ? true : product.category === activeCategory;
-
     return matchesSearch && matchesCategory;
   });
 
   return (
     <CartProvider>
-      <div style={{ position: 'absolute', top: '15px', right: '20px', zIndex: 10 }}>
-<button 
-  onClick={() => setShowLoginModal(true)} 
-  style={{ 
-    background: '#18191d', 
-    color: '#b1b5c3', 
-    border: '1px solid #232627', 
-    borderRadius: '10px', 
-    cursor: 'pointer', 
-    fontSize: '0.85rem', 
-    fontWeight: '600',
-    padding: '8px 16px', 
-    display: 'inline-flex', 
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '0px',
-    letterSpacing: '0.6px',
-    transition: 'all 0.2s ease',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-  }}
-  onMouseEnter={(e) => {
-    e.currentTarget.style.borderColor = 'var(--neon-orange)';
-    e.currentTarget.style.color = 'var(--neon-orange)';
-    e.currentTarget.style.background = 'rgba(255, 94, 0, 0.02)';
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.borderColor = '#232627';
-    e.currentTarget.style.color = '#b1b5c3';
-    e.currentTarget.style.background = '#18191d';
-  }}
-  title="Painel de Gestao"
->
-  <i className="fa-solid fa-lock" style={{ fontSize: '0.8rem' }}></i>
-  Admin
-</button>
-      </div>
+      {/* Container Fixo */}
+      <div style={{ 
+        position: 'sticky', 
+        top: 0, 
+        zIndex: 100, 
+        backgroundColor: '#121214', 
+        paddingTop: '10px' 
+      }}>
+        <div style={{ position: 'absolute', top: '15px', right: '20px', zIndex: 10 }}>
+          <button onClick={() => setShowLoginModal(true)} style={{ background: '#18191d', color: '#b1b5c3', border: '1px solid #232627', borderRadius: '10px', padding: '8px 16px', cursor: 'pointer' }}>
+            <i className="fa-solid fa-lock"></i> Admin
+          </button>
+        </div>
 
-      <Header />
-      <main className="container">
+        <Header />
         <SearchBar value={searchQuery} onChange={setSearchQuery} />
-
-        {!searchQuery && promoProducts.length > 0 && (
-          <div className="promo-highlights-section" style={{ marginBottom: '35px' }}>
-            <h2 style={{ fontSize: '1.4rem', color: 'var(--neon-orange)', marginBottom: '15px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ width: '8px', height: '18px', background: 'var(--neon-orange)', borderRadius: '4px', display: 'inline-block' }}></span>
-              Ofertas Especiais
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-              {promoProducts.map(product => (
-                <div key={`promo-${product.id}`} style={{ border: '1px solid rgba(255, 94, 0, 0.25)', borderRadius: '12px', background: 'linear-gradient(145deg, #18191d, #121214)', padding: '4px', boxShadow: '0 8px 24px rgba(255, 94, 0, 0.05)' }}>
-                  <ProductCard product={product} />
-                </div>
-              ))}
-            </div>
+        
+        {!searchQuery && (
+          <div style={{ paddingBottom: '10px' }}>
+            <CategoryNav
+              categories={categories}
+              activeCategory={activeCategory}
+              onSelectCategory={setActiveCategory}
+            />
           </div>
         )}
+      </div>
 
-        {!searchQuery && (
-          <CategoryNav
-            categories={categories}
-            activeCategory={activeCategory}
-            onSelectCategory={setActiveCategory}
-          />
+      {/* Conteúdo rolável */}
+      <main className="container" style={{ marginTop: '20px' }}>
+        {!searchQuery && promoProducts.length > 0 && (
+          <div className="promo-highlights-section" style={{ marginBottom: '35px' }}>
+             <h2 style={{ fontSize: '1.4rem', color: 'var(--neon-orange)', marginBottom: '15px', fontWeight: '700' }}>Ofertas Especiais</h2>
+             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+               {promoProducts.map(product => <div key={`promo-${product.id}`}><ProductCard product={product} /></div>)}
+             </div>
+          </div>
         )}
 
         <section className="products-section">
           <h2 className="section-title">
             {searchQuery ? `Resultados para "${searchQuery}"` : categories.find(c => c.id === activeCategory)?.label || activeCategory}
           </h2>
-
           <div className="products-grid">
-            {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+            {filteredProducts.map((product) => <ProductCard key={product.id} product={product} />)}
           </div>
-
-          {filteredProducts.length === 0 && (
-            <div className="no-results">
-              <i className="fa-solid fa-face-frown"></i>
-              <p>Nenhum produto em estoque nesta categoria...</p>
-            </div>
-          )}
         </section>
       </main>
-      <Footer />
 
+      <Footer />
       <FloatingCart onClick={() => setIsCartOpen(true)} />
       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
-
-      {/* POPUP DE AUTENTICAÇÃO GERENCIAL */}
-      {showLoginModal && (
+      
+      {/* Modal de Login Mantido */}
+       {showLoginModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
           <div style={{ background: '#18191d', border: '1px solid #232627', padding: '30px', borderRadius: '16px', width: '100%', maxWidth: '360px', fontFamily: 'sans-serif' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
