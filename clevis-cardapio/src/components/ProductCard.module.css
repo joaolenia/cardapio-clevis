@@ -348,3 +348,26 @@
 }
 .priceContainer { display: flex; flex-direction: column; }
 .oldCardPrice { font-size: 0.75rem; color: #777; text-decoration: line-through; margin-bottom: -2px; }
+
+.sectionHeaderFlex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.selectionTip {
+    font-size: 0.75rem;
+    color: #777e90;
+    font-weight: 500;
+}
+
+.flavorComplementBadge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--neon-yellow);
+    background: rgba(255, 215, 0, 0.05);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    padding: 3px 8px;
+    border-radius: 6px;
+}

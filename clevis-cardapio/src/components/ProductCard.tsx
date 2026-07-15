@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getStoredAdditions } from '../data/products';
-import type { Product, CustomizationOption } from '../data/products';
+import { getStoredAdditions, getStoredFlavors } from '../data/products';
+import type { Product, CustomizationOption, FlavorOption } from '../data/products';
 import { useCart } from '../context/CartContext';
 import styles from './ProductCard.module.css';
 
@@ -13,27 +13,36 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [selectedVariant, setSelectedVariant] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [selectedAdditions, setSelectedAdditions] = useState<CustomizationOption[]>([]);
+  const [selectedFlavors, setSelectedFlavors] = useState<FlavorOption[]>([]);
   const [notes, setNotes] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [dynamicAdditions, setDynamicAdditions] = useState<CustomizationOption[]>([]);
+  const [dynamicFlavors, setDynamicFlavors] = useState<FlavorOption[]>([]);
 
-  // CORREÇÃO: Carrega os adicionais de forma assíncrona para evitar travar a tela
   useEffect(() => {
-    const loadAdditions = async () => {
+    const loadModalOptions = async () => {
       if (showModal) {
+        // Carrega adicionais do banco
         const allAdditions = await getStoredAdditions();
         if (Array.isArray(allAdditions)) {
-          const filtered = allAdditions.filter(a => a.categoryLinked === product.category);
-          setDynamicAdditions(filtered);
+          const filteredAdds = allAdditions.filter(a => a.categoryLinked === product.category);
+          setDynamicAdditions(filteredAdds);
+        }
+
+        // Carrega sabores do banco
+        const allFlavors = await getStoredFlavors();
+        if (Array.isArray(allFlavors)) {
+          const filteredFlavs = allFlavors.filter(f => f.categoryLinked === product.category);
+          setDynamicFlavors(filteredFlavs);
         }
       }
     };
-    loadAdditions();
+    loadModalOptions();
   }, [showModal, product.category]);
 
   const handleAddSimple = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (product.allowCustomization) {
+    if (product.allowCustomization || dynamicFlavors.length > 0) {
       setShowModal(true);
     } else if (product.isVariable) {
       addToCart(product, 1, selectedVariant);
@@ -43,13 +52,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   };
 
   const handleAddCustomized = () => {
-    addToCart(product, quantity, product.isVariable ? selectedVariant : undefined, selectedAdditions, notes);
+    // Une os sabores escolhidos às anotações de observações para enviar ao carrinho
+    let flavorNotes = notes;
+    if (selectedFlavors.length > 0) {
+      const flavorNames = selectedFlavors.map(f => f.name).join(', ');
+      flavorNotes = flavorNotes 
+        ? `Sabores: ${flavorNames} | OBS: ${flavorNotes}` 
+        : `Sabores: ${flavorNames}`;
+    }
+
+    addToCart(product, quantity, product.isVariable ? selectedVariant : undefined, selectedAdditions, flavorNotes);
     setShowModal(false);
     resetForm();
   };
 
   const resetForm = () => {
     setSelectedAdditions([]);
+    setSelectedFlavors([]);
     setNotes('');
     setQuantity(1);
   };
@@ -62,11 +81,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     );
   };
 
+  const toggleFlavor = (flavor: FlavorOption) => {
+    setSelectedFlavors(prev => 
+      prev.find(item => item.id === flavor.id)
+        ? prev.filter(item => item.id !== flavor.id)
+        : [...prev, flavor]
+    );
+  };
+
   const currentPrice = product.isPromo && product.promoPrice ? product.promoPrice : product.price;
 
   return (
     <>
-      <div className={styles.productCard} onClick={() => product.allowCustomization && setShowModal(true)}>
+      <div className={styles.productCard} onClick={() => setShowModal(true)}>
         <div className={styles.productImageContainer}>
           <img src={product.image} alt={product.name} className={styles.productImg} />
         </div>
@@ -112,7 +139,35 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             </div>
             
             <div className={styles.modalBodyScroll}>
-              {dynamicAdditions.length > 0 && (
+              
+              {/* SEÇÃO DE SABORES (MÚLTIPLA SELEÇÃO) */}
+              {dynamicFlavors.length > 0 && (
+                <div className={styles.customizationSection}>
+                  <div className={styles.sectionHeaderFlex}>
+                    <h3>Escolha os Sabores</h3>
+                    <span className={styles.selectionTip}>Selecione ate meio a meio ou mais</span>
+                  </div>
+                  <div className={styles.additionsList}>
+                    {dynamicFlavors.map((flav) => {
+                      const isChecked = !!selectedFlavors.find(item => item.id === flav.id);
+                      return (
+                        <div key={flav.id} className={styles.additionItem} onClick={() => toggleFlavor(flav)}>
+                          <div className={styles.addLabel}>
+                            <span className={`${styles.customCheckbox} ${isChecked ? styles.checked : ''}`}>
+                              {isChecked && '✓'}
+                            </span>
+                            <span>{flav.name}</span>
+                          </div>
+                          <span className={styles.flavorComplementBadge}>Disponivel</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* SEÇÃO DE ADICIONAIS */}
+              {product.allowCustomization && dynamicAdditions.length > 0 && (
                 <div className={styles.customizationSection}>
                   <h3>Adicionais</h3>
                   <div className={styles.additionsList}>
@@ -138,7 +193,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 <h3>Observacoes</h3>
                 <textarea 
                   className={styles.customNotesInput} 
-                  placeholder="Ex: Sem cebola, bem passado..." 
+                  placeholder="Ex: Tirar cebola, maionese a parte..." 
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   maxLength={140}
