@@ -9,6 +9,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { getStoredProducts, getStoredCategories, authenticateManager } from './data/products';
 import type { Product, Category } from './data/products';
 import { CartProvider } from './context/CartContext';
+import { Footer } from './components/Footer';
 
 export const App: React.FC = () => {
   const [view, setView] = useState<'client' | 'admin'>('client');
@@ -161,6 +162,7 @@ export const App: React.FC = () => {
           )}
         </section>
       </main>
+      <Footer />
 
       <FloatingCart onClick={() => setIsCartOpen(true)} />
       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />

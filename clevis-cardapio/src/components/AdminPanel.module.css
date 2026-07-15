@@ -466,3 +466,98 @@
 }
 .btnSave:hover { opacity: 0.9; }
 .btnSave:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Responsividade para Telas Mobile */
+@media (max-width: 768px) {
+  .adminContainer {
+    padding: 12px;
+  }
+
+  .adminHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+    text-align: center;
+  }
+
+  .adminNav {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .adminNav button {
+    flex: 1 1 calc(50% - 8px); /* Dois botões por linha no mobile */
+    font-size: 0.85rem;
+    padding: 10px;
+  }
+
+  /* Faz as divisões ocuparem largura total */
+  .dashboardSplit {
+    grid-template-columns: 1fr !important;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .customizationsPanelSplit {
+    grid-template-columns: 1fr !important;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* Transforma a tabela em um layout de lista/card super moderno no mobile */
+  .adminTable, 
+  .adminTable thead, 
+  .adminTable tbody, 
+  .adminTable th, 
+  .adminTable td, 
+  .adminTable tr {
+    display: block;
+  }
+
+  .adminTable thead {
+    display: none; /* Esconde o cabeçalho original da tabela */
+  }
+
+  .adminTable tr {
+    margin-bottom: 15px;
+    border: 1px solid #232627;
+    border-radius: 12px;
+    background: #18191d;
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  .adminTable td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+    font-size: 0.9rem;
+    text-align: right;
+  }
+
+  .adminTable td:last-child {
+    border-bottom: none;
+    justify-content: center;
+    padding-top: 12px;
+  }
+
+  /* Adiciona rótulos simulados à esquerda de cada dado */
+  .adminTable td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #777e90;
+    text-align: left;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+  }
+
+  /* Garante que imagens e badges se ajustem bem */
+  .tableImg {
+    width: 60px;
+    height: 60px;
+  }
+}

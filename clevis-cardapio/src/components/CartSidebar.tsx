@@ -10,6 +10,7 @@ interface CartSidebarProps {
 export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
   const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart } = useCart();
   const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup'>('delivery');
+  const [customerName, setCustomerName] = useState(''); // Novo estado para o nome do cliente
   const [address, setAddress] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Pix');
 
@@ -26,6 +27,13 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
   };
 
   const handleCheckout = () => {
+    // Validação obrigatória do Nome (independente se é Retirada ou Entrega)
+    if (!customerName.trim()) {
+      alert('Por favor, informe o seu Nome.');
+      return;
+    }
+
+    // Validação do Endereço apenas se for Entrega
     if (deliveryType === 'delivery' && !address.trim()) {
       alert('Por favor, informe o endereço para entrega.');
       return;
@@ -55,6 +63,8 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
 
     const message = encodeURIComponent(
       `*Novo Pedido - Clevi's*\n\n` +
+      `*Cliente:* ${customerName.trim()}\n` + // Adicionado no texto do WhatsApp
+      `--------------------------------\n` +
       `${orderItemsText}\n\n` +
       `--------------------------------\n` +
       `*Tipo:* ${deliveryType === 'delivery' ? 'Entrega' : 'Retirada'}\n` +
@@ -64,9 +74,11 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
       `*Total Geral:* ${totalText}`
     );
 
-    const whatsappUrl = `https://wa.me/5547992497677?text=${message}`;
+    const whatsappUrl = `https://wa.me/5542998748652?text=${message}`;
     window.open(whatsappUrl, '_blank');
     clearCart();
+    setCustomerName(''); // Reseta o nome após o fechamento
+    setAddress('');      // Reseta o endereço após o fechamento
     onClose();
   };
 
@@ -113,7 +125,6 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                   </div>
 
                   <div className={styles.qtySelector}>
-                    {/* Alterado para permitir a remoção caso chegue a zero */}
                     <button onClick={() => handleDecreaseQuantity(item.id, item.quantity)}>-</button>
                     <span>{item.quantity}</span>
                     <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
@@ -142,20 +153,28 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
             </div>
 
             <div className={styles.deliveryForm}>
+              <h4>Dados do Cliente</h4>
+              {/* Campo do nome sempre visível e obrigatório para entrega ou retirada */}
+              <input 
+                type="text" 
+                value={customerName} 
+                onChange={e => setCustomerName(e.target.value)} 
+                placeholder="Seu Nome completo *" 
+                required 
+                style={{ marginBottom: '12px' }}
+              />
+
               {deliveryType === 'delivery' && (
-                <>
-                  <h4>Dados do Cliente</h4>
-                  <input 
-                    type="text" 
-                    value={address} 
-                    onChange={e => setAddress(e.target.value)} 
-                    placeholder="Endereço (Rua, Número, Bairro)" 
-                    required 
-                  />
-                </>
+                <input 
+                  type="text" 
+                  value={address} 
+                  onChange={e => setAddress(e.target.value)} 
+                  placeholder="Endereço (Rua, Número, Bairro) *" 
+                  required 
+                />
               )}
 
-              <h4>Forma de Pagamento</h4>
+              <h4 style={{ marginTop: '16px' }}>Forma de Pagamento</h4>
               <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
                 <option value="Pix">Pix</option>
                 <option value="Dinheiro">Dinheiro</option>

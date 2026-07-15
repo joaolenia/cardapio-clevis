@@ -371,3 +371,28 @@
     padding: 3px 8px;
     border-radius: 6px;
 }
+
+/* Correção para o Modal Mobile */
+@media (max-width: 480px) {
+  .modalOverlay {
+    align-items: flex-end; /* Ancorado no fundo da tela no mobile */
+  }
+
+  .customModal {
+    height: 90vh; /* Ocupa a maior parte da tela para conforto */
+    border-radius: 24px 24px 0 0;
+  }
+
+  .modalBodyScroll {
+    padding-bottom: 20px;
+    -webkit-overflow-scrolling: touch; /* Scroll suave no iOS */
+  }
+
+  .modalFooterSticky {
+    /* Garante que o footer fique sempre visível */
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    padding-bottom: env(safe-area-inset-bottom); /* Respeita a barra de gestos do iPhone */
+  }
+}
