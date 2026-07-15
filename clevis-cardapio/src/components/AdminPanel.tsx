@@ -21,6 +21,14 @@ interface AdminPanelProps {
   onBack: () => void;
 }
 
+interface PopupState {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  type: 'alert' | 'confirm';
+  onConfirm?: () => void;
+}
+
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -60,6 +68,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
   const [flavorName, setFlavorName] = useState('');
   const [flavorCategoryLinked, setFlavorCategoryLinked] = useState('');
 
+  // Estado do Popup Customizado
+  const [popup, setPopup] = useState<PopupState>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'alert'
+  });
+
+  const showAlertPopup = (title: string, message: string) => {
+    setPopup({
+      isOpen: true,
+      title,
+      message,
+      type: 'alert'
+    });
+  };
+
+  const showConfirmPopup = (title: string, message: string, onConfirm: () => void) => {
+    setPopup({
+      isOpen: true,
+      title,
+      message,
+      type: 'confirm',
+      onConfirm
+    });
+  };
+
+  const closePopup = () => {
+    setPopup(prev => ({ ...prev, isOpen: false }));
+  };
+
   useEffect(() => {
     const loadAdminData = async () => {
       const prods = await getStoredProducts();
@@ -73,13 +112,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
       setFlavors(flavs);
       
       if (cats.length > 0) {
-        setProdCategory(cats[0].id);
+        if (!editingId) {
+          setProdCategory(cats[0].id);
+        }
         setAddCategoryLinked(cats[0].id);
         setFlavorCategoryLinked(cats[0].id);
       }
     };
     loadAdminData();
-  }, [activeTab]);
+  }, [activeTab, editingId]);
 
   const handleToggleStatus = async (id: number) => {
     const targetProduct = products.find(p => p.id === id);
@@ -118,12 +159,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
       if (uploadedUrl) {
         finalImageUrl = uploadedUrl;
       } else {
-        alert('Falha ao processar e salvar a imagem.');
+        showAlertPopup('Erro no Upload', 'Falha ao processar e salvar a imagem.');
         setIsUploading(false);
         return;
       }
     } else if (!editingId) {
-      alert('Por favor, selecione uma foto para o produto.');
+      showAlertPopup('Foto Necessária', 'Por favor, selecione uma foto para o produto.');
       setIsUploading(false);
       return;
     }
@@ -133,7 +174,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
       name: prodName,
       price: isVariable ? (variants[0]?.price || 0) : parseFloat(prodPrice),
       category: prodCategory,
-      desc: prodDesc, // Sem required, pode ir vazio
+      desc: prodDesc,
       image: finalImageUrl,
       allowCustomization: allowCustom,
       isVariable: isVariable,
@@ -150,7 +191,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
       resetProductForm();
       setActiveTab('list');
     } else {
-      alert('Erro ao sincronizar dados com o Supabase.');
+      showAlertPopup('Erro de Sincronização', 'Erro ao sincronizar dados com o Supabase.');
     }
   };
 
@@ -170,13 +211,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     setActiveTab('product_form');
   };
 
-  const handleDeleteProduct = async (id: number) => {
-    if (window.confirm('Excluir este item e sua foto permanentemente?')) {
-      const success = await deleteStoredProduct(id);
-      if (success) {
-        setProducts(products.filter(p => p.id !== id));
+  const handleDeleteProduct = (id: number) => {
+    showConfirmPopup(
+      'Confirmar Exclusão', 
+      'Deseja excluir este item e sua foto permanentemente do banco?', 
+      async () => {
+        const success = await deleteStoredProduct(id);
+        if (success) {
+          setProducts(products.filter(p => p.id !== id));
+        }
       }
-    }
+    );
   };
 
   const handleSaveCategory = async (e: React.FormEvent) => {
@@ -208,18 +253,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     setActiveTab('category_form');
   };
 
-  const handleDeleteCategory = async (id: string) => {
-    if (window.confirm('⚠️ ATENÇÃO: Apagar a categoria excluirá todos os produtos, adicionais e sabores vinculados! Continuar?')) {
-      const success = await deleteStoredCategory(id);
-      if (success) {
-        setCategories(categories.filter(c => c.id !== id));
-        setProducts(products.filter(p => p.category !== id));
-        setAdditions(additions.filter(a => a.categoryLinked !== id));
-        setFlavors(flavors.filter(f => f.categoryLinked !== id));
+  // CORREÇÃO: Função tratada para capturar o erro 23503 do Supabase e alertar o admin
+const handleDeleteCategory = (id: string) => {
+    showConfirmPopup(
+      'Apagar Categoria', 
+      'Deseja excluir esta categoria permanentemente?', 
+      async () => {
+        const result = await deleteStoredCategory(id);
+        
+        if (result === true) {
+          // Exclusão bem-sucedida
+          setCategories(categories.filter(c => c.id !== id));
+          setProducts(products.filter(p => p.category !== id));
+          setAdditions(additions.filter(a => a.categoryLinked !== id));
+          setFlavors(flavors.filter(f => f.id !== id));
+        } else if (result && typeof result === 'object' && (result as any).code === '23503') {
+          // CORREÇÃO: Usamos o "as any" para contornar a validação do tipo 'never'
+          showAlertPopup(
+            'Não é possível excluir', 
+            `Esta categoria não pode ser apagada no momento porque existem produtos, opcionais ou sabores vinculados a ela.\n\nPor favor, exclua todos os itens vinculados a esta categoria antes de apagá-la.`
+          );
+        } else {
+          // Outros erros genéricos
+          showAlertPopup(
+            'Erro ao excluir', 
+            'Esta categoria não pode ser apagada no momento porque existem produtos, opcionais ou sabores vinculados a ela.\n\nPor favor, exclua todos os itens vinculados a esta categoria antes de apagá-la.'
+          );
+        }
       }
-    }
+    );
   };
-
   const handleSaveAddition = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!addName || !addPrice) return;
@@ -239,13 +302,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     }
   };
 
-  const handleDeleteAddition = async (id: string) => {
-    if (window.confirm('Excluir este adicional permanentemente?')) {
-      const success = await deleteStoredAddition(id);
-      if (success) {
-        setAdditions(additions.filter(a => a.id !== id));
+  const handleDeleteAddition = (id: string) => {
+    showConfirmPopup(
+      'Excluir Adicional', 
+      'Deseja excluir este adicional permanentemente do catálogo?', 
+      async () => {
+        const success = await deleteStoredAddition(id);
+        if (success) {
+          setAdditions(additions.filter(a => a.id !== id));
+        }
       }
-    }
+    );
   };
 
   const handleSaveFlavor = async (e: React.FormEvent) => {
@@ -264,13 +331,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     }
   };
 
-  const handleDeleteFlavor = async (id: string) => {
-    if (window.confirm('Excluir este sabor permanentemente?')) {
-      const success = await deleteStoredFlavor(id);
-      if (success) {
-        setFlavors(flavors.filter(f => f.id !== id));
+  const handleDeleteFlavor = (id: string) => {
+    showConfirmPopup(
+      'Excluir Sabor', 
+      'Deseja excluir este sabor de forma definitiva do cardápio?', 
+      async () => {
+        const success = await deleteStoredFlavor(id);
+        if (success) {
+          setFlavors(flavors.filter(f => f.id !== id));
+        }
       }
-    }
+    );
   };
 
   const resetProductForm = () => {
@@ -352,11 +423,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                     <td>
                       <div className={styles.actionGroup}>
                         <button className={styles.btnEdit} onClick={() => handleEditProduct(p)} title="Editar">
-                          <i className="fa-solid fa-pen-to-square"></i>
                           ✎
                         </button>
                         <button className={styles.btnDelete} onClick={() => handleDeleteProduct(p.id)} title="Excluir">
-                          <i className="fa-solid fa-trash-can"></i>
                           X
                         </button>
                       </div>
@@ -388,11 +457,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                     <td>
                       <div className={styles.actionGroup}>
                         <button className={styles.btnEdit} onClick={() => handleEditCategory(c)} title="Editar Nome">
-                          <i className="fa-solid fa-pen-to-square"></i>
                           ✎
                         </button>
                         <button className={styles.btnDelete} onClick={() => handleDeleteCategory(c.id)} title="Excluir Completa">
-                          <i className="fa-solid fa-trash-can"></i>
                           X
                         </button>
                       </div>
@@ -437,7 +504,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             <label className={styles.switchLabel}>
               <input type="checkbox" checked={isPromo} onChange={e => setIsPromo(e.target.checked)} />
               <div>
-                <strong>Este produto está em promoção ativa?</strong>
+                <strong>Este produto está em promoção activa?</strong>
                 <p>O item será indexado na aba de ofertas especiais no cabeçalho</p>
               </div>
             </label>
@@ -465,7 +532,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
 
           <div className={styles.formGroup}>
             <label>Descrição Complementar / Ingredientes <span className={styles.optionalText}>(Opcional)</span></label>
-            <textarea value={prodDesc} onChange={e => setProdDesc(e.target.value)} placeholder="Ex: Pão brioche selado na manteiga, dois smashs bovinos de 80g, muito cheddar e barbecue caseiro..." maxLength={250}></textarea>
+            <textarea value={prodDesc} onChange={e => setProdDesc(e.target.value)} placeholder="Ex: Pão brioche selado na manteiga..." maxLength={250}></textarea>
           </div>
 
           <div className={styles.formSectionTitle} style={{ marginTop: '15px' }}>
@@ -495,7 +562,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                 <input type="text" value={varName} onChange={e => setVarName(e.target.value)} placeholder="Ex: Pizza Grande (8 Fatias)" />
                 <input type="number" step="0.01" value={varPrice} onChange={e => setVarPrice(e.target.value)} placeholder="Preço R$" />
                 <button type="button" onClick={handleAddVariant} className={styles.btnPlusVariant}>
-                  <i className="fa-solid fa-plus"></i>
+                  +
                 </button>
               </div>
               <ul className={styles.variantList}>
@@ -523,7 +590,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
               <h3>Cadastrar Adicional / Complemento</h3>
               <div className={styles.formGroup}>
                 <label>Nome do Adicional</label>
-                <input type="text" value={addName} onChange={e => setAddName(e.target.value)} placeholder="Ex: Queijo Extra, Bacon em Cubos" required />
+                <input type="text" value={addName} onChange={e => setAddName(e.target.value)} placeholder="Ex: Queijo Extra..." required />
               </div>
               <div className={styles.formGroup}>
                 <label>Preço do Adicional (R$)</label>
@@ -535,7 +602,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                   {categories.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                 </select>
               </div>
-              <button type="submit" className={styles.btnSave}><i className="fa-solid fa-plus"></i> Salvar Adicional</button>
+              <button type="submit" className={styles.btnSave}>Salvar Adicional</button>
             </form>
 
             <div className={styles.miniTableWrapper} style={{ marginTop: '20px' }}>
@@ -556,7 +623,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                       <td><span className={styles.miniCategoryBadge}>{a.categoryLinked}</span></td>
                       <td style={{ textAlign: 'center' }}>
                         <button className={styles.btnDeleteTableInline} onClick={() => handleDeleteAddition(a.id)}>
-                          <i className="fa-solid fa-trash-can"></i>
                           X
                         </button>
                       </td>
@@ -573,7 +639,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
               <h3>Cadastrar Sabores Disponíveis</h3>
               <div className={styles.formGroup}>
                 <label>Nome do Sabor</label>
-                <input type="text" value={flavorName} onChange={e => setFlavorName(e.target.value)} placeholder="Ex: Frango com Catupiry, Quatro Queijos" required />
+                <input type="text" value={flavorName} onChange={e => setFlavorName(e.target.value)} placeholder="Ex: Quatro Queijos..." required />
               </div>
               <div className={styles.formGroup}>
                 <label>Categoria Vinculada</label>
@@ -582,7 +648,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                 </select>
               </div>
               <button type="submit" className={styles.btnSave} style={{ background: 'var(--neon-yellow)', color: '#121214' }}>
-                <i className="fa-solid fa-plus"></i> Salvar Sabor
+                Salvar Sabor
               </button>
             </form>
 
@@ -602,7 +668,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                       <td><span className={styles.miniCategoryBadge} style={{ borderColor: 'var(--neon-yellow)', color: 'var(--neon-yellow)' }}>{f.categoryLinked}</span></td>
                       <td style={{ textAlign: 'center' }}>
                         <button className={styles.btnDeleteTableInline} onClick={() => handleDeleteFlavor(f.id)}>
-                          <i className="fa-solid fa-trash-can"></i>
                           X
                         </button>
                       </td>
@@ -627,9 +692,41 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             <input type="text" value={catName} onChange={e => setCatName(e.target.value)} placeholder="Ex: Porções Crocantes" required />
           </div>
           <button type="submit" className={styles.btnSave}>
-            <i className="fa-solid fa-circle-plus"></i> {editingCategoryId ? 'Atualizar Categoria' : 'Alocar Nova Categoria'}
+            {editingCategoryId ? 'Atualizar Categoria' : 'Alocar Nova Categoria'}
           </button>
         </form>
+      )}
+
+      {popup.isOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
+          <div style={{ background: '#18191d', border: '1px solid #232627', padding: '24px', borderRadius: '16px', width: '90%', maxWidth: '400px', fontFamily: 'sans-serif' }}>
+            <h3 style={{ margin: '0 0 10px 0', color: '#f4f5f6', fontSize: '1.2rem', fontWeight: 700 }}>{popup.title}</h3>
+            {/* O estilo white-space: pre-wrap foi adicionado para respeitar quebras de linha em mensagens longas */}
+            <p style={{ color: '#b1b5c3', fontSize: '0.9rem', lineHeight: '1.5', margin: '0 0 20px 0', whiteSpace: 'pre-wrap' }}>{popup.message}</p>
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              {popup.type === 'confirm' && (
+                <button 
+                  onClick={closePopup}
+                  style={{ background: '#141416', color: '#777e90', border: '1px solid #232627', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}
+                >
+                  Cancelar
+                </button>
+              )}
+              <button 
+                onClick={() => {
+                  if (popup.type === 'confirm' && popup.onConfirm) {
+                    popup.onConfirm();
+                  }
+                  closePopup();
+                }}
+                style={{ background: popup.type === 'confirm' ? '#ef4444' : 'var(--neon-orange, #ff5e00)', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem' }}
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
