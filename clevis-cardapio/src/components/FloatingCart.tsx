@@ -23,7 +23,7 @@ export const FloatingCart: React.FC<FloatingCartProps> = ({ onClick }) => {
           <i className="fa-solid fa-basket-shopping"></i>
           <span className={styles.cartCount}>{totalQuantity}</span>
         </div>
-        <span>Ver Sacola</span>
+        <span>Ver Pedido</span>
         <span className={styles.floatTotal}>R$ {totalPrice.toFixed(2).replace('.', ',')}</span>
       </div>
     </div>

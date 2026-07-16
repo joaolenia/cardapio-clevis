@@ -18,6 +18,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [dynamicAdditions, setDynamicAdditions] = useState<CustomizationOption[]>([]);
   const [dynamicFlavors, setDynamicFlavors] = useState<FlavorOption[]>([]);
 
+  const isPizza = product.category === 'pizzas';
+
   // Carrega opções e bloqueia o scroll do body quando o modal abre
   useEffect(() => {
     const loadModalOptions = async () => {
@@ -42,17 +44,78 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     };
   }, [showModal, product.category]);
 
-  // Lógica do preço base (considera variação ou promoção)
+  // Reseta os sabores E as bordas caso o cliente mude o tamanho da pizza
+  useEffect(() => {
+    if (isPizza) {
+      setSelectedFlavors([]);
+      setSelectedAdditions(prev => prev.filter(a => {
+        const nameLower = a.name.toLowerCase();
+        // Remove os especiais (sabores) e as bordas antigas para evitar divergência de tamanho
+        return !nameLower.startsWith('especial') && !nameLower.startsWith('borda');
+      }));
+    }
+  }, [selectedVariant, isPizza]);
+
+  // Lógica de Limite de Sabores e Identificação do Tamanho Atual
+  let maxFlavors = 1;
+  let currentPizzaSize = '';
+  
+  if (isPizza && product.isVariable && product.options) {
+    const variantName = product.options[selectedVariant]?.name?.toLowerCase() || '';
+    if (variantName.includes('broto')) {
+      maxFlavors = 2;
+      currentPizzaSize = 'broto';
+    } else if (variantName.includes('média') || variantName.includes('media')) {
+      maxFlavors = 2;
+      currentPizzaSize = 'media';
+    } else if (variantName.includes('grande')) {
+      maxFlavors = 3;
+      currentPizzaSize = 'grande';
+    } else if (variantName.includes('família') || variantName.includes('familia')) {
+      maxFlavors = 4;
+      currentPizzaSize = 'familia';
+    }
+  }
+
+  // Preço base e preço total
   const basePrice = product.isVariable && product.options && product.options.length > 0
     ? product.options[selectedVariant].price
     : (product.isPromo && product.promoPrice ? product.promoPrice : product.price);
 
   const totalPrice = basePrice + selectedAdditions.reduce((acc, a) => acc + a.price, 0);
 
+  // Contagem atual de sabores (normais + especiais)
+  const currentFlavorCount = selectedFlavors.length + selectedAdditions.filter(a => a.name.toLowerCase().startsWith('especial')).length;
+
+  // Filtros de exibição
+  const pizzaSpecials = dynamicAdditions.filter(a => a.name.toLowerCase().startsWith('especial'));
+  let pizzaBordas: CustomizationOption[] = [];
+  let normalAdditions = dynamicAdditions;
+
+  if (isPizza) {
+    // Separa as bordas correspondentes ao tamanho atual
+    pizzaBordas = dynamicAdditions.filter(a => {
+      const addNameLower = a.name.toLowerCase();
+      if (addNameLower.startsWith('borda')) {
+        if (currentPizzaSize === 'broto' && addNameLower.includes('broto')) return true;
+        if (currentPizzaSize === 'media' && (addNameLower.includes('média') || addNameLower.includes('media'))) return true;
+        if (currentPizzaSize === 'grande' && addNameLower.includes('grande')) return true;
+        if (currentPizzaSize === 'familia' && (addNameLower.includes('família') || addNameLower.includes('familia'))) return true;
+        return false;
+      }
+      return false;
+    });
+
+    // Filtra os adicionais normais retirando especiais e bordas
+    normalAdditions = dynamicAdditions.filter(a => {
+      const n = a.name.toLowerCase();
+      return !n.startsWith('especial') && !n.startsWith('borda');
+    });
+  }
+
   const handleAddSimple = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Se permitir customização ou for categoria que costuma ter sabores, abre o modal
-    if (product.allowCustomization || product.category === 'pizzas' || product.category === 'sushi') {
+    if (product.allowCustomization || isPizza || product.category === 'sushi') {
       setShowModal(true);
     } else {
       addToCart(product, 1, product.isVariable ? selectedVariant : undefined, [], '');
@@ -61,8 +124,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   const handleAddCustomized = () => {
     let flavorNotes = notes;
-    if (selectedFlavors.length > 0) {
-      const flavorNames = selectedFlavors.map(f => f.name).join(', ');
+    
+    // Une sabores tradicionais e especiais para enviar para o carrinho
+    let flavorNamesList = selectedFlavors.map(f => f.name);
+    if (isPizza) {
+      const specialFlavors = selectedAdditions.filter(a => a.name.toLowerCase().startsWith('especial')).map(a => a.name);
+      flavorNamesList = [...flavorNamesList, ...specialFlavors];
+    }
+
+    if (flavorNamesList.length > 0) {
+      const flavorNames = flavorNamesList.join(', ');
       flavorNotes = flavorNotes ? `Sabores: ${flavorNames} | OBS: ${flavorNotes}` : `Sabores: ${flavorNames}`;
     }
     
@@ -74,11 +145,40 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   };
 
   const toggleAddition = (add: CustomizationOption) => {
-    setSelectedAdditions(prev => prev.find(i => i.id === add.id) ? prev.filter(i => i.id !== add.id) : [...prev, add]);
+    const isSelected = !!selectedAdditions.find(i => i.id === add.id);
+    const nameLower = add.name.toLowerCase();
+    const isSpecial = nameLower.startsWith('especial');
+    const isBorda = nameLower.startsWith('borda');
+    
+    // Trava de Sabores: se for pizza, for especial, não estiver selecionado e já atingiu o limite
+    if (isPizza && isSpecial && !isSelected && currentFlavorCount >= maxFlavors) return;
+
+    // Lógica Exclusiva para Borda (Limite de 1 por pizza)
+    if (isPizza && isBorda) {
+      if (isSelected) {
+        // Se clicar nela de novo, apenas remove
+        setSelectedAdditions(prev => prev.filter(i => i.id !== add.id));
+      } else {
+        // Se selecionar uma borda nova, desmarca qualquer outra borda e adiciona a nova
+        setSelectedAdditions(prev => {
+          const withoutBordas = prev.filter(i => !i.name.toLowerCase().startsWith('borda'));
+          return [...withoutBordas, add];
+        });
+      }
+      return;
+    }
+
+    // Para adicionais comuns, apenas faz o toggle normalmente
+    setSelectedAdditions(prev => isSelected ? prev.filter(i => i.id !== add.id) : [...prev, add]);
   };
 
   const toggleFlavor = (flav: FlavorOption) => {
-    setSelectedFlavors(prev => prev.find(i => i.id === flav.id) ? prev.filter(i => i.id !== flav.id) : [...prev, flav]);
+    const isSelected = !!selectedFlavors.find(i => i.id === flav.id);
+    
+    // Trava se for pizza, não estiver selecionado e já atingiu o limite
+    if (isPizza && !isSelected && currentFlavorCount >= maxFlavors) return;
+
+    setSelectedFlavors(prev => isSelected ? prev.filter(i => i.id !== flav.id) : [...prev, flav]);
   };
 
   return (
@@ -92,7 +192,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <p className={styles.productDesc}>{product.desc}</p>
           
           <div className={styles.productMeta}>
-            {/* SELETOR DE VARIAÇÃO SE EXISTIR */}
             {product.isVariable && product.options && product.options.length > 0 ? (
               <div className={styles.variantContainer}>
                 <select
@@ -134,43 +233,93 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               <button className={styles.closeModalBtn} onClick={() => setShowModal(false)}>&times;</button>
             </div>
             
-            {/* ÁREA ROLÁVEL (LIMITADA PARA EXIBIR ~4 ITENS) */}
+            {/* ÁREA ROLÁVEL DE OPÇÕES */}
             <div className={styles.optionsScrollArea}>
-              {dynamicFlavors.length > 0 && (
+              
+              {/* SABORES E ESPECIAIS */}
+              {(dynamicFlavors.length > 0 || (isPizza && pizzaSpecials.length > 0)) && (
                 <div className={styles.customizationSection}>
-                  <h3>Escolha os Sabores</h3>
+                  <h3>
+                    Escolha os Sabores 
+                    {isPizza && <span style={{fontSize: '0.8rem', fontWeight: 'normal', color: 'var(--text-gray)'}}> (Até {maxFlavors})</span>}
+                  </h3>
                   <div className={styles.additionsList}>
-                    {dynamicFlavors.map(f => (
-                      <div key={f.id} className={styles.additionItem} onClick={() => toggleFlavor(f)}>
-                        <div className={styles.addLabel}>
-                          <span className={`${styles.customCheckbox} ${selectedFlavors.find(i => i.id === f.id) ? styles.checked : ''}`}>✓</span>
-                          {f.name}
+                    
+                    {/* Sabores Normais */}
+                    {dynamicFlavors.map(f => {
+                      const isChecked = !!selectedFlavors.find(i => i.id === f.id);
+                      return (
+                        <div key={f.id} className={styles.additionItem} onClick={() => toggleFlavor(f)}>
+                          <div className={styles.addLabel}>
+                            <span className={`${styles.customCheckbox} ${isChecked ? styles.checked : ''}`}>{isChecked ? '✓' : ''}</span>
+                            {f.name}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
+
+                    {/* Sabores Especiais (Apenas para Pizzas) */}
+                    {isPizza && pizzaSpecials.map(a => {
+                      const isChecked = !!selectedAdditions.find(i => i.id === a.id);
+                      return (
+                        <div key={a.id} className={styles.additionItem} onClick={() => toggleAddition(a)}>
+                          <div className={styles.addLabel}>
+                            <span className={`${styles.customCheckbox} ${isChecked ? styles.checked : ''}`}>{isChecked ? '✓' : ''}</span>
+                            {a.name}
+                          </div>
+                          <span className={styles.addPrice}>+ R$ {a.price.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                      );
+                    })}
+
                   </div>
                 </div>
               )}
 
-              {dynamicAdditions.length > 0 && (
+              {/* BORDAS EXCLUSIVAS (SE FOR PIZZA E TIVER BORDA DO TAMANHO) */}
+              {isPizza && pizzaBordas.length > 0 && (
                 <div className={styles.customizationSection}>
-                  <h3>Adicionais</h3>
+                  <h3>Borda <span style={{fontSize: '0.8rem', fontWeight: 'normal', color: 'var(--text-gray)'}}> (Máx. 1)</span></h3>
                   <div className={styles.additionsList}>
-                    {dynamicAdditions.map(a => (
-                      <div key={a.id} className={styles.additionItem} onClick={() => toggleAddition(a)}>
-                        <div className={styles.addLabel}>
-                          <span className={`${styles.customCheckbox} ${selectedAdditions.find(i => i.id === a.id) ? styles.checked : ''}`}>✓</span>
-                          {a.name}
+                    {pizzaBordas.map(a => {
+                      const isChecked = !!selectedAdditions.find(i => i.id === a.id);
+                      return (
+                        <div key={a.id} className={styles.additionItem} onClick={() => toggleAddition(a)}>
+                          <div className={styles.addLabel}>
+                            <span className={`${styles.customCheckbox} ${isChecked ? styles.checked : ''}`} style={{ borderRadius: '50%' }}>{isChecked ? '✓' : ''}</span>
+                            {a.name}
+                          </div>
+                          <span className={styles.addPrice}>+ R$ {a.price.toFixed(2).replace('.', ',')}</span>
                         </div>
-                        <span className={styles.addPrice}>+ R$ {a.price.toFixed(2).replace('.', ',')}</span>
-                      </div>
-                    ))}
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* ADICIONAIS COMUNS (Bacon, Cheddar extra, etc) */}
+              {normalAdditions.length > 0 && (
+                <div className={styles.customizationSection}>
+                  <h3>Adicionais Extras</h3>
+                  <div className={styles.additionsList}>
+                    {normalAdditions.map(a => {
+                      const isChecked = !!selectedAdditions.find(i => i.id === a.id);
+                      return (
+                        <div key={a.id} className={styles.additionItem} onClick={() => toggleAddition(a)}>
+                          <div className={styles.addLabel}>
+                            <span className={`${styles.customCheckbox} ${isChecked ? styles.checked : ''}`}>{isChecked ? '✓' : ''}</span>
+                            {a.name}
+                          </div>
+                          <span className={styles.addPrice}>+ R$ {a.price.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* RODAPÉ 100% FIXO (OBSERVAÇÕES E BOTÃO) */}
+            {/* RODAPÉ 100% FIXO */}
             <div className={styles.modalFixedFooter}>
               <div className={styles.notesWrapper}>
                 <label>Observações</label>
