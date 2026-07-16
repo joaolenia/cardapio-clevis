@@ -1,15 +1,24 @@
 /* CategoryNav.module.css */
+/* Alteração em src/components/CategoryNav.module.css */
 .categoriesNav {
     display: flex;
     gap: 12px;
     margin-bottom: 25px;
     overflow-x: auto;
     scroll-behavior: smooth;
-    padding-bottom: 8px;
-}
+    padding-bottom: 5px;
+    
+    /* Adicionando limitação de largura e centralização */
+    max-width: 1000px; /* Define um limite máximo */
+    margin-left: auto;
+    margin-right: auto;
+    width: 95%; /* Garante margem nas laterais em telas muito pequenas */
+}   
 
 .categoriesNav::-webkit-scrollbar {
-    display: none;
+    background: #373636; /* Cor de fundo da barra de rolagem */
+    height: 8px; /* Altura da barra de rolagem */
+    border-radius: 14px; /* Bordas arredondadas */   
 }
 
 .catBtn {
@@ -21,7 +30,7 @@
     cursor: pointer;
     font-weight: 600;
     white-space: nowrap;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

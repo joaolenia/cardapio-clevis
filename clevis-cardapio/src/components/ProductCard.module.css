@@ -42,6 +42,7 @@
     flex-direction: column;
     justify-content: space-between;
     height: 100%;
+    min-width: 0; /* Essencial para truncar textos no filho */
 }
 
 .productName {
@@ -49,6 +50,9 @@
     font-weight: 600;
     color: var(--text-white);
     margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .productDesc {
@@ -67,8 +71,20 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
     gap: 10px;
+    width: 100%;
+}
+
+.priceContainer { 
+    display: flex; 
+    flex-direction: column; 
+}
+
+.oldCardPrice { 
+    font-size: 0.75rem; 
+    color: #777; 
+    text-decoration: line-through; 
+    margin-bottom: -2px; 
 }
 
 .productPrice {
@@ -77,15 +93,26 @@
     color: var(--neon-yellow);
 }
 
+/* LÓGICA DE TRUNCAMENTO DO SELETOR DE VARIAÇÃO */
+.variantContainer {
+    flex: 1;
+    min-width: 0; /* Permite que o select encolha em vez de esticar a tela */
+}
+
 .productVariantSelect {
+    width: 100%;
     background: #1e1e1e;
     color: var(--neon-yellow);
     border: 1px solid rgba(255,255,255,0.1);
-    padding: 6px 10px;
+    padding: 6px 8px;
     border-radius: 8px;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     outline: none;
     font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    cursor: pointer;
 }
 
 .addToCartBtn {
@@ -97,6 +124,7 @@
     font-weight: 700;
     font-size: 0.8rem;
     cursor: pointer;
+    flex-shrink: 0; /* Impede que o botão encolha */
     transition: all 0.2s ease;
 }
 
@@ -104,9 +132,8 @@
     background: var(--neon-orange);
     color: #fff;
 }
-/* Mantenha os estilos de .productCard, .productImg, etc., intocados no topo */
 
-/* --- NOVO DESIGN DO MODAL MODERNO E MENOR --- */
+/* --- DESIGN DO MODAL MODERNO E MENOR --- */
 .modalOverlay {
     position: fixed;
     top: 0;
@@ -118,7 +145,7 @@
     z-index: 200;
     display: flex;
     justify-content: center;
-    align-items: flex-end; /* Sobe de baixo para cima */
+    align-items: flex-end; 
     animation: fadeIn 0.2s ease;
 }
 
@@ -132,7 +159,7 @@
     background: #111111;
     width: 100%;
     max-width: 480px;
-    height: 60vh; /* Altura compacta e moderna */
+    height: 60vh; 
     border-radius: 24px 24px 0 0;
     display: flex;
     flex-direction: column;
@@ -164,11 +191,10 @@
     color: white;
 }
 
-.modalProdPrice {
-    font-size: 0.9rem;
+.modalVariantName {
+    font-size: 0.85rem;
     color: var(--neon-yellow);
-    font-weight: 600;
-    margin-top: 2px;
+    margin-top: 4px;
 }
 
 .closeModalBtn {
@@ -193,65 +219,63 @@
     flex: 1;
     overflow-y: auto;
     padding: 20px 24px;
+    -webkit-overflow-scrolling: touch; 
 }
 
 .customizationSection {
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 }
 
 .customizationSection h3 {
-    font-size: 0.95rem;
-    font-weight: 700;
+    font-size: 1.05rem;
+    font-weight: 800;
     color: white;
-    margin-bottom: 2px;
-}
-
-.sectionSubtitle {
-    font-size: 0.75rem;
-    color: var(--text-gray);
     margin-bottom: 12px;
 }
 
 .additionsList {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
 }
 
+/* --- DESIGN CHAMATIVO PARA ADICIONAIS --- */
 .additionItem {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 14px;
-    background: rgba(255, 255, 255, 0.02);
+    padding: 14px 16px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 94, 0, 0.15); 
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
 .additionItem:hover {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 94, 0, 0.2);
+    background: linear-gradient(145deg, rgba(255, 94, 0, 0.1), rgba(255, 255, 255, 0.02));
+    border-color: rgba(255, 94, 0, 0.5);
+    transform: translateY(-2px);
 }
 
 .addLabel {
     display: flex;
     align-items: center;
     gap: 12px;
-    font-size: 0.85rem;
-    font-weight: 500;
+    font-size: 0.95rem;
+    font-weight: 600;
 }
 
 .customCheckbox {
-    width: 18px;
-    height: 18px;
-    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     color: white;
     transition: all 0.2s;
 }
@@ -259,24 +283,28 @@
 .customCheckbox.checked {
     background: var(--neon-orange);
     border-color: var(--neon-orange);
-    box-shadow: 0 0 8px rgba(255, 94, 0, 0.3);
+    box-shadow: 0 0 10px rgba(255, 94, 0, 0.4);
 }
 
 .addPrice {
-    font-size: 0.85rem;
-    color: var(--neon-green);
-    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--neon-orange);
+    font-weight: 800;
+    background: rgba(255, 94, 0, 0.1);
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 94, 0, 0.2);
 }
 
 .customNotesInput {
     width: 100%;
-    height: 65px;
+    height: 80px;
     background: #161616;
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 12px;
     color: white;
     padding: 12px;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     resize: none;
     outline: none;
     transition: border-color 0.2s;
@@ -288,111 +316,44 @@
 
 .modalFooterSticky {
     padding: 16px 24px;
-    background: #0a0a0a;
+    background: #111111;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
-    display: flex;
-    align-items: center;
-    gap: 16px;
-}
-
-.qtyPicker {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    background: #161616;
-    padding: 8px 16px;
-    border-radius: 30px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.qtyPicker button {
-    background: transparent;
-    border: none;
-    color: white;
-    font-size: 1.1rem;
-    cursor: pointer;
-    width: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.qtyPicker span {
-    font-weight: 700;
-    font-size: 0.95rem;
-    min-width: 15px;
-    text-align: center;
+    position: sticky;
+    bottom: 0;
+    width: 100%;
+    box-sizing: border-box;
+    z-index: 10;
 }
 
 .btnAddModal {
-    flex: 1;
+    width: 100%;
     background: var(--neon-orange);
     color: white;
     border: none;
-    padding: 12px;
+    padding: 16px;
     border-radius: 30px;
-    font-weight: 700;
-    font-size: 0.95rem;
+    font-weight: 800;
+    font-size: 1.05rem;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(255, 94, 0, 0.2);
-    transition: transform 0.2s, filter 0.2s;
+    box-shadow: 0 4px 15px rgba(255, 94, 0, 0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .btnAddModal:active {
     transform: scale(0.98);
+    box-shadow: 0 2px 8px rgba(255, 94, 0, 0.2);
 }
 
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
 }
-.priceContainer { display: flex; flex-direction: column; }
-.oldCardPrice { font-size: 0.75rem; color: #777; text-decoration: line-through; margin-bottom: -2px; }
 
-.sectionHeaderFlex {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-}
-
-.selectionTip {
-    font-size: 0.75rem;
-    color: #777e90;
-    font-weight: 500;
-}
-
-.flavorComplementBadge {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--neon-yellow);
-    background: rgba(255, 215, 0, 0.05);
-    border: 1px solid rgba(255, 215, 0, 0.15);
-    padding: 3px 8px;
-    border-radius: 6px;
-}
-
-/* Correção para o Modal Mobile */
 @media (max-width: 480px) {
-  .modalOverlay {
-    align-items: flex-end; /* Ancorado no fundo da tela no mobile */
-  }
-
   .customModal {
-    height: 90vh; /* Ocupa a maior parte da tela para conforto */
-    border-radius: 24px 24px 0 0;
+    height: 85vh; 
   }
-
-  .modalBodyScroll {
-    padding-bottom: 20px;
-    -webkit-overflow-scrolling: touch; /* Scroll suave no iOS */
-  }
-
   .modalFooterSticky {
-    /* Garante que o footer fique sempre visível */
-    position: sticky;
-    bottom: 0;
-    z-index: 10;
-    padding-bottom: env(safe-area-inset-bottom); /* Respeita a barra de gestos do iPhone */
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
   }
 }
