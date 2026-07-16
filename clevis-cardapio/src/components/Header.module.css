@@ -8,7 +8,7 @@
     text-align: center;
     background:  
                 url('https://smkqpmbmexkedkprfleh.supabase.co/storage/v1/object/public/product-images/products/header.png');
-    background-size: 90%;
+    background-size: 40%;
     background-position: center;
     border-bottom: 4px solid var(--neon-orange);
     box-shadow: 0 10px 30px rgba(255, 94, 0, 0.3);
