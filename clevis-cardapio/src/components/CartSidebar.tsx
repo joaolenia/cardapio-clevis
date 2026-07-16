@@ -15,17 +15,17 @@ const NEIGHBORHOODS = [
   { id: 'bairro2', name: 'Bairro Popular ', fee: 10.00 },
   { id: 'bairro3', name: 'Nova Concórdia', fee: 25.00 },
   { id: 'bairro4', name: 'Informar no Chat', fee: 0.00 },
-
 ];
 
 export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
   const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart } = useCart();
   
   // Estados Gerais
-  const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup'>('delivery');
+  const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup' | 'dine_in'>('delivery');
   const [customerName, setCustomerName] = useState('');
   const [streetAndNumber, setStreetAndNumber] = useState('');
   const [selectedNeighborhood, setSelectedNeighborhood] = useState('');
+  const [tableNumber, setTableNumber] = useState(''); // Usado para Nome ou Número da Mesa
   const [paymentMethod, setPaymentMethod] = useState('Pix');
 
   // Estados dos Modais
@@ -92,7 +92,12 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
 
   // Finalização do Pedido
   const handleCheckout = () => {
-    if (!customerName.trim()) return alert('Por favor, informe o seu Nome.');
+    // Validações Baseadas no Tipo de Pedido
+    if (deliveryType === 'dine_in') {
+      if (!tableNumber.trim()) return alert('Por favor, informe seu nome ou número da mesa.');
+    } else {
+      if (!customerName.trim()) return alert('Por favor, informe o seu Nome.');
+    }
     
     if (deliveryType === 'delivery') {
       if (!selectedNeighborhood) return alert('Por favor, selecione um Bairro.');
@@ -132,13 +137,22 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
 
       const notesText = item.notes ? `\n   ↳ *Obs:* ${item.notes}` : '';
 
-      return `🔸 *${item.quantity} ${item.product.name}*${variantText} - R$ ${totalLinePrice.toFixed(2).replace('.', ',')}${additionsText}${notesText}`;
+      return `🔸 *${item.quantity}x ${item.product.name}*${variantText} - R$ ${totalLinePrice.toFixed(2).replace('.', ',')}${additionsText}${notesText}`;
     }).join('\n\n');
 
     let addressText = '';
     if (deliveryType === 'delivery') {
       addressText = `*Endereço:* ${streetAndNumber}\n*Bairro:* ${selectedNeighborhood}\n`;
     }
+
+    let deliveryTypeName = '';
+    if (deliveryType === 'delivery') deliveryTypeName = 'Entrega 🛵';
+    else if (deliveryType === 'pickup') deliveryTypeName = 'Retirada 🏪';
+    else if (deliveryType === 'dine_in') deliveryTypeName = 'Consumir no Local 🍽️';
+
+    let clientText = deliveryType === 'dine_in' 
+      ? `*Nome/Mesa:* ${tableNumber.trim()}\n`
+      : `*Cliente:* ${customerName.trim()}\n`;
 
     // Bloco inteligente de Pagamento e Cálculo do Troco
     let paymentText = '';
@@ -156,8 +170,8 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
 
     const message = encodeURIComponent(
       `🛒 *NOVO PEDIDO - CLEVI'S* 🛒\n\n` +
-      `*Cliente:* ${customerName.trim()}\n` +
-      `*Tipo:* ${deliveryType === 'delivery' ? 'Entrega 🛵' : 'Retirada 🏪'}\n` +
+      `${clientText}` +
+      `*Tipo:* ${deliveryTypeName}\n` +
       `${addressText}` +
       `--------------------------------\n` +
       `*RESUMO DO PEDIDO:*\n\n` +
@@ -176,6 +190,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
     setCustomerName('');
     setStreetAndNumber('');
     setSelectedNeighborhood('');
+    setTableNumber('');
     setPaymentMethod('Pix');
     setNeedsChange(null);
     setChangeAmount('');
@@ -239,11 +254,34 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                 <button className={`${styles.optionBtn} ${deliveryType === 'pickup' ? styles.active : ''}`} onClick={() => setDeliveryType('pickup')}>
                   Retirada
                 </button>
+                <button className={`${styles.optionBtn} ${deliveryType === 'dine_in' ? styles.active : ''}`} onClick={() => setDeliveryType('dine_in')}>
+                  Consumir no Local
+                </button>
               </div>
 
               <div className={styles.deliveryForm}>
                 <h4>Dados do Cliente</h4>
-                <input type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Seu Nome completo *" required style={{ marginBottom: '12px' }} />
+                
+                {/* Imput Unificado/Condicional */}
+                {deliveryType !== 'dine_in' ? (
+                  <input 
+                    type="text" 
+                    value={customerName} 
+                    onChange={e => setCustomerName(e.target.value)} 
+                    placeholder="Seu Nome completo *" 
+                    required 
+                    style={{ marginBottom: '12px' }} 
+                  />
+                ) : (
+                  <input 
+                    type="text" 
+                    value={tableNumber} 
+                    onChange={e => setTableNumber(e.target.value)} 
+                    placeholder="Digite seu nome ou número da mesa *" 
+                    required 
+                    style={{ marginBottom: '12px' }} 
+                  />
+                )}
 
                 {deliveryType === 'delivery' && (
                   <>
@@ -281,7 +319,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
               </div>
               <div className={styles.summaryLine}>
                 <span>Taxa de Entrega</span>
-                <span>{deliveryType === 'pickup' ? 'Grátis' : (selectedNeighborhood ? `R$ ${currentFee.toFixed(2).replace('.', ',')}` : 'A combinar')}</span>
+                <span>{deliveryType === 'delivery' ? (selectedNeighborhood ? `R$ ${currentFee.toFixed(2).replace('.', ',')}` : 'A combinar') : 'Grátis'}</span>
               </div>
               <div className={`${styles.summaryLine} ${styles.total}`}>
                 <span>Total</span>
@@ -317,7 +355,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
             <h3>Pagamento em Dinheiro</h3>
             {!needsChange ? (
               <>
-                <p>Você vai precisar de troco para o entregador?</p>
+                <p>Você vai precisar de troco para o entregador/garçom?</p>
                 <div className={styles.popupButtons}>
                   <button className={styles.btnCancel} onClick={() => { setNeedsChange(false); setShowChangeModal(false); }}>Não</button>
                   <button className={styles.btnConfirm} onClick={() => setNeedsChange(true)}>Sim</button>
