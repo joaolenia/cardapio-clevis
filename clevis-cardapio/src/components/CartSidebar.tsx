@@ -19,7 +19,7 @@ const NEIGHBORHOODS = [
 
 export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
   const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart } = useCart();
-  
+
   // Estados Gerais
   const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup' | 'dine_in'>('delivery');
   const [customerName, setCustomerName] = useState('');
@@ -38,8 +38,8 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
   const sidebarClass = isOpen ? `${styles.cartSidebar} ${styles.open}` : styles.cartSidebar;
 
   // Cálculo de Subtotal e Taxas
-  const currentFee = deliveryType === 'delivery' 
-    ? NEIGHBORHOODS.find(n => n.name === selectedNeighborhood)?.fee || 0 
+  const currentFee = deliveryType === 'delivery'
+    ? NEIGHBORHOODS.find(n => n.name === selectedNeighborhood)?.fee || 0
     : 0;
 
   const subtotal = getCartTotal();
@@ -98,7 +98,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
     } else {
       if (!customerName.trim()) return alert('Por favor, informe o seu Nome.');
     }
-    
+
     if (deliveryType === 'delivery') {
       if (!selectedNeighborhood) return alert('Por favor, selecione um Bairro.');
       if (!streetAndNumber.trim()) return alert('Por favor, informe Rua e Número.');
@@ -127,11 +127,11 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
       const additionsSum = item.selectedAdditions.reduce((acc, a) => acc + a.price, 0);
       const totalLinePrice = (basePrice + additionsSum) * item.quantity;
 
-      const variantText = item.selectedVariant !== undefined && item.product.options 
-        ? ` (${item.product.options[item.selectedVariant].name})` 
+      const variantText = item.selectedVariant !== undefined && item.product.options
+        ? ` (${item.product.options[item.selectedVariant].name})`
         : '';
 
-      const additionsText = item.selectedAdditions.length > 0 
+      const additionsText = item.selectedAdditions.length > 0
         ? `\n   ↳ Adicionais: ${item.selectedAdditions.map(a => a.name).join(', ')}`
         : '';
 
@@ -150,7 +150,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
     else if (deliveryType === 'pickup') deliveryTypeName = 'Retirada 🏪';
     else if (deliveryType === 'dine_in') deliveryTypeName = 'Consumir no Local 🍽️';
 
-    let clientText = deliveryType === 'dine_in' 
+    let clientText = deliveryType === 'dine_in'
       ? `*Nome/Mesa:* ${tableNumber.trim()}\n`
       : `*Cliente:* ${customerName.trim()}\n`;
 
@@ -185,7 +185,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
     );
 
     window.open(`https://wa.me/5542998748652?text=${message}`, '_blank');
-    
+
     clearCart();
     setCustomerName('');
     setStreetAndNumber('');
@@ -261,33 +261,36 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
 
               <div className={styles.deliveryForm}>
                 <h4>Dados do Cliente</h4>
-                
+
                 {/* Imput Unificado/Condicional */}
                 {deliveryType !== 'dine_in' ? (
-                  <input 
-                    type="text" 
-                    value={customerName} 
-                    onChange={e => setCustomerName(e.target.value)} 
-                    placeholder="Seu Nome completo *" 
-                    required 
-                    style={{ marginBottom: '12px' }} 
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={e => setCustomerName(e.target.value)}
+                    placeholder="Seu Nome completo *"
+                    required
+                    style={{ marginBottom: '12px' }}
                   />
                 ) : (
-                  <input 
-                    type="text" 
-                    value={tableNumber} 
-                    onChange={e => setTableNumber(e.target.value)} 
-                    placeholder="Digite seu nome ou número da mesa *" 
-                    required 
-                    style={{ marginBottom: '12px' }} 
+                  <input
+                    type="text"
+                    value={tableNumber}
+                    onChange={e => setTableNumber(e.target.value)}
+                    placeholder="Digite seu nome ou número da mesa *"
+                    required
+                    style={{ marginBottom: '12px' }}
                   />
                 )}
 
                 {deliveryType === 'delivery' && (
                   <>
+                    {/* COMO DEVE FICAR */}
                     <select value={selectedNeighborhood} onChange={e => setSelectedNeighborhood(e.target.value)} style={{ marginBottom: '8px' }}>
                       {NEIGHBORHOODS.map(n => (
-                        <option key={n.id} value={n.name} disabled={n.id === ''}>{n.name} {n.fee > 0 ? `(+R$ ${n.fee.toFixed(2).replace('.', ',')})` : ''}</option>
+                        <option key={n.id} value={n.id === '' ? '' : n.name} disabled={n.id === ''}>
+                          {n.name} {n.fee > 0 ? `(+R$ ${n.fee.toFixed(2).replace('.', ',')})` : ''}
+                        </option>
                       ))}
                     </select>
                     <input type="text" value={streetAndNumber} onChange={e => setStreetAndNumber(e.target.value)} placeholder="Rua e Número *" required />
@@ -301,7 +304,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                   <option value="Cartão de Crédito">Cartão de Crédito</option>
                   <option value="Cartão de Débito">Cartão de Débito</option>
                 </select>
-                
+
                 {/* Mostra resumo do troco se for dinheiro */}
                 {paymentMethod === 'Dinheiro' && needsChange !== null && (
                   <div className={styles.changeSummary} onClick={() => setShowChangeModal(true)}>
@@ -365,12 +368,12 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
               <>
                 <p style={{ marginBottom: '10px' }}>Total do pedido: <strong>R$ {finalTotal.toFixed(2).replace('.', ',')}</strong></p>
                 <p>Troco para quanto?</p>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   className={styles.changeInput}
-                  placeholder="Ex: 50, 100..." 
-                  value={changeAmount} 
-                  onChange={e => setChangeAmount(e.target.value)} 
+                  placeholder="Ex: 50, 100..."
+                  value={changeAmount}
+                  onChange={e => setChangeAmount(e.target.value)}
                   autoFocus
                 />
                 <div className={styles.popupButtons}>
