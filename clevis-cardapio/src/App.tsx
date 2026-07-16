@@ -35,9 +35,9 @@ export const App: React.FC = () => {
     };
     loadData();
   }, [view]);
-
+   
   const promoProducts = products.filter(p => p.isPromo && p.disponivel !== false);
-
+ 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
