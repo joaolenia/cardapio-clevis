@@ -51,7 +51,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   const handleAddSimple = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Se permitir customização ou for categoria que costuma ter sabores (pizza/sushi), abre o modal
+    // Se permitir customização ou for categoria que costuma ter sabores, abre o modal
     if (product.allowCustomization || product.category === 'pizzas' || product.category === 'sushi') {
       setShowModal(true);
     } else {
@@ -122,6 +122,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       {showModal && (
         <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
           <div className={styles.customModal} onClick={e => e.stopPropagation()}>
+            
+            {/* CABEÇALHO */}
             <div className={styles.modalHeader}>
               <div>
                 <h2 className={styles.modalProdTitle}>{product.name}</h2>
@@ -132,7 +134,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               <button className={styles.closeModalBtn} onClick={() => setShowModal(false)}>&times;</button>
             </div>
             
-            <div className={styles.modalBodyScroll}>
+            {/* ÁREA ROLÁVEL (LIMITADA PARA EXIBIR ~4 ITENS) */}
+            <div className={styles.optionsScrollArea}>
               {dynamicFlavors.length > 0 && (
                 <div className={styles.customizationSection}>
                   <h3>Escolha os Sabores</h3>
@@ -165,15 +168,25 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                   </div>
                 </div>
               )}
+            </div>
 
-              <div className={styles.customizationSection}>
-                <h3>Observações</h3>
-                <textarea className={styles.customNotesInput} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex: Tirar cebola, maionese a parte..." />
+            {/* RODAPÉ 100% FIXO (OBSERVAÇÕES E BOTÃO) */}
+            <div className={styles.modalFixedFooter}>
+              <div className={styles.notesWrapper}>
+                <label>Observações</label>
+                <textarea 
+                  className={styles.customNotesInput} 
+                  value={notes} 
+                  onChange={(e) => setNotes(e.target.value)} 
+                  placeholder="Ex: Tirar cebola, maionese a parte..." 
+                />
+              </div>
+              
               <button className={styles.btnAddModal} onClick={handleAddCustomized}>
                 Confirmar • R$ {totalPrice.toFixed(2).replace('.', ',')}
               </button>
-              </div>
             </div>
+
           </div>
         </div>
       )}

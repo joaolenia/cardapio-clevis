@@ -1,4 +1,6 @@
-/* ProductCard.module.css */
+/* =========================================
+   ESTILOS DO CARD DO PRODUTO (Mantidos)
+========================================= */
 .productCard {
     background: var(--card-bg);
     border: 1px solid rgba(255,255,255,0.05);
@@ -42,7 +44,7 @@
     flex-direction: column;
     justify-content: space-between;
     height: 100%;
-    min-width: 0; /* Essencial para truncar textos no filho */
+    min-width: 0;
 }
 
 .productName {
@@ -93,10 +95,9 @@
     color: var(--neon-yellow);
 }
 
-/* LÓGICA DE TRUNCAMENTO DO SELETOR DE VARIAÇÃO */
 .variantContainer {
     flex: 1;
-    min-width: 0; /* Permite que o select encolha em vez de esticar a tela */
+    min-width: 0; 
 }
 
 .productVariantSelect {
@@ -124,7 +125,7 @@
     font-weight: 700;
     font-size: 0.8rem;
     cursor: pointer;
-    flex-shrink: 0; /* Impede que o botão encolha */
+    flex-shrink: 0; 
     transition: all 0.2s ease;
 }
 
@@ -133,48 +134,38 @@
     color: #fff;
 }
 
-/* --- DESIGN DO MODAL MODERNO E MENOR --- */
+/* =========================================
+   DESIGN DO MODAL CENTRALIZADO (Pop-Up Verdadeiro)
+========================================= */
 .modalOverlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(6px);
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
     z-index: 200;
     display: flex;
     justify-content: center;
-    align-items: flex-end; 
+    align-items: center; /* Centraliza verticalmente, fugindo do fundo da tela */
+    padding: 20px; /* Garante que nunca encoste nas bordas */
+    box-sizing: border-box;
     animation: fadeIn 0.2s ease;
-}
-
-@media(min-width: 768px) {
-    .modalOverlay {
-        align-items: center;
-    }
 }
 
 .customModal {
     background: #111111;
     width: 100%;
-    max-width: 480px;
-    height: 60vh; 
-    border-radius: 24px 24px 0 0;
+    max-width: 420px;
+    max-height: 90vh; /* Não ultrapassa o tamanho da tela */
+    border-radius: 20px; /* Bordas arredondadas em todos os cantos */
     display: flex;
     flex-direction: column;
     overflow: hidden;
     position: relative;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
-}
-
-@media(min-width: 768px) {
-    .customModal {
-        height: 55vh;
-        border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-    }
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
 }
 
 .modalHeader {
@@ -183,6 +174,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0; /* Cabeçalho fixo */
 }
 
 .modalProdTitle {
@@ -215,15 +207,28 @@
     background: rgba(255, 255, 255, 0.1);
 }
 
-.modalBodyScroll {
-    flex: 1;
+/* ÁREA ROLÁVEL SOMENTE PARA AS LISTAS */
+.optionsScrollArea {
+    max-height: 250px; /* Mostra aproximadamente 4 itens, o resto fica oculto no scroll */
     overflow-y: auto;
-    padding: 20px 24px;
+    padding: 16px 24px;
     -webkit-overflow-scrolling: touch; 
 }
 
+/* Scrollbar estilizada para o modal */
+.optionsScrollArea::-webkit-scrollbar {
+    width: 6px;
+}
+.optionsScrollArea::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+}
+
 .customizationSection {
-    margin-bottom: 24px;
+    margin-bottom: 20px;
+}
+.customizationSection:last-child {
+    margin-bottom: 0;
 }
 
 .customizationSection h3 {
@@ -236,10 +241,9 @@
 .additionsList {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
-/* --- DESIGN CHAMATIVO PARA ADICIONAIS --- */
 .additionItem {
     display: flex;
     justify-content: space-between;
@@ -249,14 +253,11 @@
     border-radius: 12px;
     border: 1px solid rgba(255, 94, 0, 0.15); 
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
 }
 
-.additionItem:hover {
-    background: linear-gradient(145deg, rgba(255, 94, 0, 0.1), rgba(255, 255, 255, 0.02));
-    border-color: rgba(255, 94, 0, 0.5);
-    transform: translateY(-2px);
+.additionItem:active {
+    transform: scale(0.98);
 }
 
 .addLabel {
@@ -276,13 +277,14 @@
     align-items: center;
     justify-content: center;
     font-size: 0.75rem;
-    color: white;
+    color: transparent; /* Oculta o ✓ quando desmarcado */
     transition: all 0.2s;
 }
 
 .customCheckbox.checked {
     background: var(--neon-orange);
     border-color: var(--neon-orange);
+    color: white;
     box-shadow: 0 0 10px rgba(255, 94, 0, 0.4);
 }
 
@@ -296,43 +298,56 @@
     border: 1px solid rgba(255, 94, 0, 0.2);
 }
 
+/* RODAPÉ 100% FIXO - OBSERVAÇÕES E BOTÃO */
+.modalFixedFooter {
+    padding: 16px 24px;
+    background: #161616; /* Levemente diferente do fundo para destacar */
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex-shrink: 0; /* Impede de encolher e sumir da tela */
+    z-index: 10;
+}
+
+.notesWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.notesWrapper label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: white;
+}
+
 .customNotesInput {
     width: 100%;
-    height: 80px;
-    background: #161616;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
+    height: 55px; /* Compacto, mas funcional */
+    background: #111111;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
     color: white;
-    padding: 12px;
-    font-size: 0.9rem;
+    padding: 10px 12px;
+    font-size: 0.85rem;
     resize: none;
     outline: none;
     transition: border-color 0.2s;
+    box-sizing: border-box;
 }
 
 .customNotesInput:focus {
     border-color: var(--neon-orange);
 }
 
-.modalFooterSticky {
-    padding: 16px 24px;
-    background: #111111;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    position: sticky;
-    bottom: 0;
-    width: 100%;
-    box-sizing: border-box;
-    z-index: 10;
-}
-
 .btnAddModal {
-    margin-top: 10px;
     width: 100%;
     background: var(--neon-orange);
     color: white;
     border: none;
     padding: 16px;
-    border-radius: 30px;
+    border-radius: 12px; /* Combina mais com as notas */
     font-weight: 800;
     font-size: 1.05rem;
     cursor: pointer;
@@ -348,13 +363,4 @@
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
-}
-
-@media (max-width: 480px) {
-  .customModal {
-    height: 85vh; 
-  }
-  .modalFooterSticky {
-    padding-bottom: calc(16px + env(safe-area-inset-bottom));
-  }
 }
