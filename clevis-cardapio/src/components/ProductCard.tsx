@@ -44,7 +44,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     };
   }, [showModal, product.category]);
 
-  // Reseta os sabores E as bordas caso o cliente mude o tamanho da pizza
+  // Reseta os sabores E as bordas caso o cliente mude o tamanho da pizza dentro do modal
   useEffect(() => {
     if (isPizza) {
       setSelectedFlavors([]);
@@ -115,7 +115,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   const handleAddSimple = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (product.allowCustomization || isPizza || product.category === 'sushi') {
+    // Agora o modal sempre sobe se o item tiver variação de tamanho!
+    if (product.allowCustomization || isPizza || product.category === 'sushi' || product.isVariable) {
       setShowModal(true);
     } else {
       addToCart(product, 1, product.isVariable ? selectedVariant : undefined, [], '');
@@ -156,10 +157,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     // Lógica Exclusiva para Borda (Limite de 1 por pizza)
     if (isPizza && isBorda) {
       if (isSelected) {
-        // Se clicar nela de novo, apenas remove
         setSelectedAdditions(prev => prev.filter(i => i.id !== add.id));
       } else {
-        // Se selecionar uma borda nova, desmarca qualquer outra borda e adiciona a nova
         setSelectedAdditions(prev => {
           const withoutBordas = prev.filter(i => !i.name.toLowerCase().startsWith('borda'));
           return [...withoutBordas, add];
@@ -168,16 +167,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       return;
     }
 
-    // Para adicionais comuns, apenas faz o toggle normalmente
     setSelectedAdditions(prev => isSelected ? prev.filter(i => i.id !== add.id) : [...prev, add]);
   };
 
   const toggleFlavor = (flav: FlavorOption) => {
     const isSelected = !!selectedFlavors.find(i => i.id === flav.id);
-    
-    // Trava se for pizza, não estiver selecionado e já atingiu o limite
     if (isPizza && !isSelected && currentFlavorCount >= maxFlavors) return;
-
     setSelectedFlavors(prev => isSelected ? prev.filter(i => i.id !== flav.id) : [...prev, flav]);
   };
 
@@ -194,18 +189,20 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <div className={styles.productMeta}>
             {product.isVariable && product.options && product.options.length > 0 ? (
               <div className={styles.variantContainer}>
-                <select
+                {/* 
+                  Substituímos o <select> nativo por um elemento clicável!
+                  Ao clicar, ele aciona o Modal, melhorando drasticamente a UX mobile. 
+                */}
+                <div 
                   className={styles.productVariantSelect}
-                  value={selectedVariant}
-                  onChange={(e) => setSelectedVariant(Number(e.target.value))}
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); setShowModal(true); }}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                 >
-                  {product.options.map((opt, idx) => (
-                    <option key={idx} value={idx}>
-                      {opt.name} - R$ {opt.price.toFixed(2).replace('.', ',')}
-                    </option>
-                  ))}
-                </select>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {product.options[selectedVariant].name}
+                  </span>
+                  <span style={{ fontSize: '0.7rem', marginLeft: '6px' }}>▼</span>
+                </div>
               </div>
             ) : (
               <div className={styles.priceContainer}>
@@ -235,6 +232,29 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             
             {/* ÁREA ROLÁVEL DE OPÇÕES */}
             <div className={styles.optionsScrollArea}>
+
+              {/* SELETOR DE TAMANHO (Nativo no Modal) */}
+              {product.isVariable && product.options && product.options.length > 0 && (
+                <div className={styles.customizationSection}>
+                  <h3>Tamanho <span style={{fontSize: '0.8rem', fontWeight: 'normal', color: 'var(--text-gray)'}}>(Obrigatório)</span></h3>
+                  <div className={styles.additionsList}>
+                    {product.options.map((opt, idx) => {
+                      const isChecked = selectedVariant === idx;
+                      return (
+                        <div key={idx} className={styles.additionItem} onClick={() => setSelectedVariant(idx)}>
+                          <div className={styles.addLabel}>
+                            <span className={`${styles.customCheckbox} ${isChecked ? styles.checked : ''}`} style={{ borderRadius: '50%' }}>
+                              {isChecked ? '✓' : ''}
+                            </span>
+                            {opt.name}
+                          </div>
+                          <span className={styles.addPrice}>R$ {opt.price.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               
               {/* SABORES E ESPECIAIS */}
               {(dynamicFlavors.length > 0 || (isPizza && pizzaSpecials.length > 0)) && (
