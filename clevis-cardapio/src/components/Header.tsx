@@ -21,8 +21,6 @@ export const Header: React.FC = () => {
       <div className={styles.heroOverlay}></div>
       <div className={styles.heroContent}>
         {/* Título com animação de destaque */}
-        <h1 className={styles.brandTitle}>CLEVI'S</h1>
-        <p className={styles.brandSubtitle}>LANCHES • SUSHI • SORVETES • CHOPP</p>
         
         <div className={styles.shopInfo}>
           {config ? (

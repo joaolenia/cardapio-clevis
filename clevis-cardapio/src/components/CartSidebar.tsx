@@ -131,7 +131,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
         : '';
 
       const additionsText = item.selectedAdditions.length > 0 
-        ? `\n   ↳ ${item.selectedAdditions.map(a => a.name).join(', ')}`
+        ? `\n   ↳ Adicionais: ${item.selectedAdditions.map(a => a.name).join(', ')}`
         : '';
 
       const notesText = item.notes ? `\n   ↳ *Obs:* ${item.notes}` : '';
