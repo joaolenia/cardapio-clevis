@@ -1,6 +1,6 @@
 .hero {
     position: relative;
-    height: 220px; /* Altura maior para dar destaque à imagem */
+    height: 210px; /* Altura maior para dar destaque à imagem */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -32,7 +32,7 @@
 
 .brandTitle {
     font-family: 'Montserrat', sans-serif;
-    font-size: 5.5rem;
+    font-size: 5.3rem;
     font-weight: 900;
     letter-spacing: -2px;
     color: #fff;
