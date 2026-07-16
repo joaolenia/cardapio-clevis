@@ -11,15 +11,11 @@ interface CartSidebarProps {
 const NEIGHBORHOODS = [
   { id: '', name: 'Selecione seu Bairro...', fee: 0 },
   { id: 'centro', name: 'Centro', fee: 4.00 },
-  { id: 'bairro1', name: 'Jardim Botânico', fee: 6.50 },
-  { id: 'bairro2', name: 'Vila Nova', fee: 7.00 },
-  { id: 'bairro3', name: 'Bela Vista', fee: 8.00 },
-  { id: 'bairro4', name: 'Alto da Boa Vista', fee: 10.00 },
-  { id: 'bairro5', name: 'São Domingos', fee: 5.50 },
-  { id: 'bairro6', name: 'Parque das Águas', fee: 9.00 },
-  { id: 'bairro7', name: 'Morumbi', fee: 12.00 },
-  { id: 'bairro8', name: 'Jardim das Rosas', fee: 6.00 },
-  { id: 'bairro9', name: 'São José', fee: 8.50 },
+  { id: 'bairro1', name: 'São José', fee: 7.00 },
+  { id: 'bairro2', name: 'Bairro Popular ', fee: 10.00 },
+  { id: 'bairro3', name: 'Nova Concórdia', fee: 25.00 },
+  { id: 'bairro4', name: 'Informar no Chat', fee: 0.00 },
+
 ];
 
 export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
