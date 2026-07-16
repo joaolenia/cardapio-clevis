@@ -1,11 +1,11 @@
+/* ProductCard.module.css (ou o arquivo de estilos do seu Header) */
 .hero {
     position: relative;
-    height: 210px; /* Altura maior para dar destaque à imagem */
+    height: 210px;
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
-    /* Fundo premium com gradiente e imagem */
     background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.8)), 
                 url('https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=2070&auto=format&fit=crop');
     background-size: cover;
@@ -38,7 +38,6 @@
     color: #fff;
     margin: 0;
     text-transform: uppercase;
-    /* Neon Glow */
     text-shadow: 0 0 15px rgba(255, 94, 0, 0.7), 0 0 30px rgba(255, 94, 0, 0.4);
     animation: pulseGlow 2s infinite alternate;
 }
@@ -112,9 +111,30 @@
     to { text-shadow: 0 0 25px rgba(255, 94, 0, 0.8); }
 }
 
-/* Responsividade Mobile */
+/* Responsividade Mobile - Redução de 40% aplicada */
 @media (max-width: 480px) {
-    .hero { height: 200px; }
-    .brandTitle { font-size: 3rem; letter-spacing: -1px; }
-    .brandSubtitle { font-size: 0.75rem; letter-spacing: 2px; }
+    .hero { 
+        height: 156px; /* Redução de ~40% (260px -> 156px) */
+    }
+    
+    .brandTitle { 
+        font-size: 3.8rem; /* Redução drástica para caber no celular */
+        letter-spacing: -1px; 
+    }
+    
+    .brandSubtitle { 
+        font-size: 0.6rem; 
+        letter-spacing: 1px; 
+        margin-bottom: 10px;
+    }
+    
+    .statusBadge, .deliveryInfo { 
+        padding: 4px 10px; 
+        font-size: 0.65rem; 
+        gap: 5px;
+    }
+
+    .shopInfo { 
+        gap: 6px; 
+    }
 }

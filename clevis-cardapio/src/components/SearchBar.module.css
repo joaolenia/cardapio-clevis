@@ -6,6 +6,7 @@
      max-width: 1000px; /* Define um limite máximo */
     margin-left: auto;
     margin-right: auto;
+    margin-top: 5px;
 }
 
 .searchIcon {
