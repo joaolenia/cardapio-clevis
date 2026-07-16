@@ -326,6 +326,7 @@
 }
 
 .btnAddModal {
+    margin-top: 10px;
     width: 100%;
     background: var(--neon-orange);
     color: white;

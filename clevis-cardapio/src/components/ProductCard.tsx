@@ -169,13 +169,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               <div className={styles.customizationSection}>
                 <h3>Observações</h3>
                 <textarea className={styles.customNotesInput} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex: Tirar cebola, maionese a parte..." />
-              </div>
-            </div>
-
-            <div className={styles.modalFooterSticky}>
               <button className={styles.btnAddModal} onClick={handleAddCustomized}>
                 Confirmar • R$ {totalPrice.toFixed(2).replace('.', ',')}
               </button>
+              </div>
             </div>
           </div>
         </div>
