@@ -251,7 +251,7 @@
     padding: 14px 16px;
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
     border-radius: 12px;
-    border: 1px solid rgba(255, 94, 0, 0.15); 
+    border: 1px solid rgba(255, 255, 255, 0.15); 
     cursor: pointer;
     transition: all 0.2s ease;
 }
@@ -282,20 +282,20 @@
 }
 
 .customCheckbox.checked {
-    background: var(--neon-orange);
-    border-color: var(--neon-orange);
+    background: green;
+    border-color: var(--neon-green);
     color: white;
-    box-shadow: 0 0 10px rgba(255, 94, 0, 0.4);
+    box-shadow: 0 0 10px rgba(118, 109, 104, 0.4);
 }
 
 .addPrice {
     font-size: 0.9rem;
-    color: var(--neon-orange);
-    font-weight: 800;
-    background: rgba(255, 94, 0, 0.1);
+    color: var(--neon-green);
+    font-weight: 400;
+    background: rgba(6, 8, 32, 0.1);
     padding: 4px 10px;
     border-radius: 8px;
-    border: 1px solid rgba(255, 94, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* RODAPÉ 100% FIXO - OBSERVAÇÕES E BOTÃO */
@@ -351,7 +351,7 @@
     font-weight: 800;
     font-size: 1.05rem;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(255, 94, 0, 0.3);
+    box-shadow: 0 4px 15px rgba(180, 165, 165, 0.3);
     transition: transform 0.2s, box-shadow 0.2s;
 }
 

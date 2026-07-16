@@ -38,6 +38,12 @@ export interface Category {
   label: string;
 }
 
+export interface StoreConfig {
+  id: number;
+  aberto: boolean;
+  entrega: number;
+}
+
 // BUSCAR PRODUTOS DO BANCO
 export const getStoredProducts = async (): Promise<Product[]> => {
   const { data, error } = await supabase.from('products').select('*');
@@ -161,7 +167,7 @@ export const deleteStoredAddition = async (id: string) => {
   return !error;
 };
 
-// --- MÓDULOS DE SABORES (NOVO) ---
+// BUSCAR SABORES
 export const getStoredFlavors = async (): Promise<FlavorOption[]> => {
   const { data, error } = await supabase.from('flavors').select('*');
   if (error) return [];
@@ -212,7 +218,6 @@ export const uploadProductImage = async (file: File): Promise<string | null> => 
     return null;
   }
 };
-// Adicionar ao final do arquivo src/data/products.ts
 
 export const authenticateManager = async (usernameInput: string, passwordInput: string): Promise<boolean> => {
   try {
@@ -230,4 +235,42 @@ export const authenticateManager = async (usernameInput: string, passwordInput: 
     console.error('Erro ao processar autenticacao:', err);
     return false;
   }
+};
+
+// --- CONFIGURAÇÃO DA LOJA (STATUS E TEMPO) ---
+export const getStoreConfiguration = async (): Promise<StoreConfig | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('configuration')
+      .select('*')
+      .limit(1)
+      .maybeSingle();
+      
+    if (error) {
+      console.error('Erro ao buscar configuração da loja:', error);
+      return null;
+    }
+    
+    if (!data) {
+      return { id: 1, aberto: true, entrega: 45 };
+    }
+    
+    return { id: data.id, aberto: data.aberto, entrega: Number(data.entrega) };
+  } catch (err) {
+    console.error('Erro inesperado ao buscar configuração:', err);
+    return null;
+  }
+};
+
+export const saveStoreConfiguration = async (config: StoreConfig) => {
+  const { error } = await supabase.from('configuration').upsert({
+    id: config.id,
+    aberto: config.aberto,
+    entrega: config.entrega
+  });
+  if (error) {
+    console.error('Erro ao salvar configuração da loja:', error);
+    return false;
+  }
+  return true;
 };

@@ -12,9 +12,11 @@ import {
   getStoredFlavors,
   saveStoredFlavor,
   deleteStoredFlavor,
-  uploadProductImage
+  uploadProductImage,
+  getStoreConfiguration,
+  saveStoreConfiguration
 } from '../data/products';
-import type { Product, Category, CustomizationOption, ProductOption, FlavorOption } from '../data/products';
+import type { Product, Category, CustomizationOption, ProductOption, FlavorOption, StoreConfig } from '../data/products';
 import styles from './AdminPanel.module.css';
 
 interface AdminPanelProps {
@@ -36,6 +38,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
   const [flavors, setFlavors] = useState<FlavorOption[]>([]);
   const [activeTab, setActiveTab] = useState<'list' | 'product_form' | 'category_form' | 'customization_form'>('list');
 
+  // Configurações da Loja
+  const [storeConfig, setStoreConfig] = useState<StoreConfig | null>(null);
+  const [deliveryTimeInput, setDeliveryTimeInput] = useState('');
+
+  // Estados dos Filtros
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+
   // Estados do Formulário de Produtos
   const [editingId, setEditingId] = useState<number | null>(null);
   const [prodName, setProdName] = useState('');
@@ -55,52 +65,34 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  // Estados do Formulário de Categorias
+  // Estados Categoria
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [catName, setCatName] = useState('');
 
-  // Estados do Formulário de Adicionais
+  // Estados Adicionais
   const [addName, setAddName] = useState('');
   const [addPrice, setAddPrice] = useState('');
   const [addCategoryLinked, setAddCategoryLinked] = useState('');
 
-  // Estados do Formulário de Sabores
+  // Estados Sabores
   const [flavorName, setFlavorName] = useState('');
   const [flavorCategoryLinked, setFlavorCategoryLinked] = useState('');
 
-  // Estado do Popup Customizado
-  const [popup, setPopup] = useState<PopupState>({
-    isOpen: false,
-    title: '',
-    message: '',
-    type: 'alert'
-  });
+  // Estado do Popup
+  const [popup, setPopup] = useState<PopupState>({ isOpen: false, title: '', message: '', type: 'alert' });
 
-  const showAlertPopup = (title: string, message: string) => {
-    setPopup({
-      isOpen: true,
-      title,
-      message,
-      type: 'alert'
-    });
-  };
-
-  const showConfirmPopup = (title: string, message: string, onConfirm: () => void) => {
-    setPopup({
-      isOpen: true,
-      title,
-      message,
-      type: 'confirm',
-      onConfirm
-    });
-  };
-
-  const closePopup = () => {
-    setPopup(prev => ({ ...prev, isOpen: false }));
-  };
+  const showAlertPopup = (title: string, message: string) => setPopup({ isOpen: true, title, message, type: 'alert' });
+  const showConfirmPopup = (title: string, message: string, onConfirm: () => void) => setPopup({ isOpen: true, title, message, type: 'confirm', onConfirm });
+  const closePopup = () => setPopup(prev => ({ ...prev, isOpen: false }));
 
   useEffect(() => {
     const loadAdminData = async () => {
+      const config = await getStoreConfiguration();
+      if (config) {
+        setStoreConfig(config);
+        setDeliveryTimeInput(config.entrega.toString());
+      }
+
       const prods = await getStoredProducts();
       const cats = await getStoredCategories();
       const adds = await getStoredAdditions();
@@ -112,15 +104,34 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
       setFlavors(flavs);
       
       if (cats.length > 0) {
-        if (!editingId) {
-          setProdCategory(cats[0].id);
-        }
+        if (!editingId) setProdCategory(cats[0].id);
         setAddCategoryLinked(cats[0].id);
         setFlavorCategoryLinked(cats[0].id);
       }
     };
     loadAdminData();
   }, [activeTab, editingId]);
+
+  // Controles da Loja (Abrir/Fechar e Tempo)
+  const handleToggleStoreStatus = async () => {
+    if (!storeConfig) return;
+    const updated = { ...storeConfig, aberto: !storeConfig.aberto };
+    const success = await saveStoreConfiguration(updated);
+    if (success) {
+      setStoreConfig(updated);
+      showAlertPopup('Status Atualizado', updated.aberto ? 'Sua loja agora está ABERTA para pedidos!' : 'Sua loja agora está FECHADA para pedidos!');
+    }
+  };
+
+  const handleUpdateDeliveryTime = async () => {
+    if (!storeConfig) return;
+    const updated = { ...storeConfig, entrega: Number(deliveryTimeInput) };
+    const success = await saveStoreConfiguration(updated);
+    if (success) {
+      setStoreConfig(updated);
+      showAlertPopup('Tempo Atualizado', `O tempo estimado foi atualizado para ${updated.entrega} minutos.`);
+    }
+  };
 
   const handleToggleStatus = async (id: number) => {
     const targetProduct = products.find(p => p.id === id);
@@ -130,43 +141,34 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const updatedProduct = { ...targetProduct, disponivel: !currentStatus };
 
     const success = await saveStoredProduct(updatedProduct);
-    if (success) {
-      setProducts(products.map(p => p.id === id ? updatedProduct : p));
-    }
+    if (success) setProducts(products.map(p => p.id === id ? updatedProduct : p));
   };
 
   const handleAddVariant = () => {
     if (!varName || !varPrice) return;
     setVariants([...variants, { name: varName, price: parseFloat(varPrice) }]);
-    setVarName('');
-    setVarPrice('');
+    setVarName(''); setVarPrice('');
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setImageFile(e.target.files[0]);
-    }
+    if (e.target.files && e.target.files[0]) setImageFile(e.target.files[0]);
   };
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsUploading(true);
-
     let finalImageUrl = prodImage;
 
     if (imageFile) {
       const uploadedUrl = await uploadProductImage(imageFile);
-      if (uploadedUrl) {
-        finalImageUrl = uploadedUrl;
-      } else {
+      if (uploadedUrl) finalImageUrl = uploadedUrl;
+      else {
         showAlertPopup('Erro no Upload', 'Falha ao processar e salvar a imagem.');
-        setIsUploading(false);
-        return;
+        setIsUploading(false); return;
       }
     } else if (!editingId) {
       showAlertPopup('Foto Necessária', 'Por favor, selecione uma foto para o produto.');
-      setIsUploading(false);
-      return;
+      setIsUploading(false); return;
     }
 
     const productData: Product = {
@@ -187,41 +189,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const success = await saveStoredProduct(productData);
     setIsUploading(false);
 
-    if (success) {
-      resetProductForm();
-      setActiveTab('list');
-    } else {
-      showAlertPopup('Erro de Sincronização', 'Erro ao sincronizar dados com o Supabase.');
-    }
+    if (success) { resetProductForm(); setActiveTab('list'); }
+    else showAlertPopup('Erro de Sincronização', 'Erro ao sincronizar dados com o Supabase.');
   };
 
   const handleEditProduct = (p: Product) => {
-    setEditingId(p.id);
-    setProdName(p.name);
-    setProdPrice(p.price.toString());
-    setProdCategory(p.category);
-    setProdDesc(p.desc);
-    setProdImage(p.image);
-    setAllowCustom(!!p.allowCustomization);
-    setIsPromo(!!p.isPromo);
-    setPromoPrice(p.promoPrice?.toString() || '');
-    setIsVariable(!!p.isVariable);
-    setVariants(p.options || []);
-    setImageFile(null);
-    setActiveTab('product_form');
+    setEditingId(p.id); setProdName(p.name); setProdPrice(p.price.toString());
+    setProdCategory(p.category); setProdDesc(p.desc); setProdImage(p.image);
+    setAllowCustom(!!p.allowCustomization); setIsPromo(!!p.isPromo);
+    setPromoPrice(p.promoPrice?.toString() || ''); setIsVariable(!!p.isVariable);
+    setVariants(p.options || []); setImageFile(null); setActiveTab('product_form');
   };
 
   const handleDeleteProduct = (id: number) => {
-    showConfirmPopup(
-      'Confirmar Exclusão', 
-      'Deseja excluir este item e sua foto permanentemente do banco?', 
-      async () => {
-        const success = await deleteStoredProduct(id);
-        if (success) {
-          setProducts(products.filter(p => p.id !== id));
-        }
-      }
-    );
+    showConfirmPopup('Confirmar Exclusão', 'Deseja excluir este item permanentemente?', async () => {
+      const success = await deleteStoredProduct(id);
+      if (success) setProducts(products.filter(p => p.id !== id));
+    });
   };
 
   const handleSaveCategory = async (e: React.FormEvent) => {
@@ -240,115 +224,72 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
       success = await saveStoredCategory(newCat);
     }
     
-    if (success) {
-      setCatName('');
-      setEditingCategoryId(null);
-      setActiveTab('list');
-    }
+    if (success) { setCatName(''); setEditingCategoryId(null); setActiveTab('list'); }
   };
 
   const handleEditCategory = (c: Category) => {
-    setEditingCategoryId(c.id);
-    setCatName(c.label);
-    setActiveTab('category_form');
+    setEditingCategoryId(c.id); setCatName(c.label); setActiveTab('category_form');
   };
 
-  // CORREÇÃO: Função tratada para capturar o erro 23503 do Supabase e alertar o admin
-const handleDeleteCategory = (id: string) => {
-    showConfirmPopup(
-      'Apagar Categoria', 
-      'Deseja excluir esta categoria permanentemente?', 
-      async () => {
-        const result = await deleteStoredCategory(id);
-        
-        if (result === true) {
-          // Exclusão bem-sucedida
-          setCategories(categories.filter(c => c.id !== id));
-          setProducts(products.filter(p => p.category !== id));
-          setAdditions(additions.filter(a => a.categoryLinked !== id));
-          setFlavors(flavors.filter(f => f.id !== id));
-        } else if (result && typeof result === 'object' && (result as any).code === '23503') {
-          // CORREÇÃO: Usamos o "as any" para contornar a validação do tipo 'never'
-          showAlertPopup(
-            'Não é possível excluir', 
-            `Esta categoria não pode ser apagada no momento porque existem produtos, opcionais ou sabores vinculados a ela.\n\nPor favor, exclua todos os itens vinculados a esta categoria antes de apagá-la.`
-          );
-        } else {
-          // Outros erros genéricos
-          showAlertPopup(
-            'Erro ao excluir', 
-            'Esta categoria não pode ser apagada no momento porque existem produtos, opcionais ou sabores vinculados a ela.\n\nPor favor, exclua todos os itens vinculados a esta categoria antes de apagá-la.'
-          );
-        }
+  const handleDeleteCategory = (id: string) => {
+    showConfirmPopup('Apagar Categoria', 'Deseja excluir esta categoria permanentemente?', async () => {
+      const result = await deleteStoredCategory(id);
+      if (result === true) {
+        setCategories(categories.filter(c => c.id !== id));
+        setProducts(products.filter(p => p.category !== id));
+        setAdditions(additions.filter(a => a.categoryLinked !== id));
+        setFlavors(flavors.filter(f => f.id !== id));
+      } else if (result && typeof result === 'object' && (result as any).code === '23503') {
+        showAlertPopup('Não é possível excluir', 'Exclua os itens vinculados antes.');
       }
-    );
+    });
   };
+
   const handleSaveAddition = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!addName || !addPrice) return;
-    const newAdd: CustomizationOption = {
-      id: Date.now().toString(),
-      name: addName,
-      price: parseFloat(addPrice),
-      categoryLinked: addCategoryLinked
-    };
-    
+    const newAdd: CustomizationOption = { id: Date.now().toString(), name: addName, price: parseFloat(addPrice), categoryLinked: addCategoryLinked };
     const success = await saveStoredAddition(newAdd);
     if (success) {
       const updatedAdds = await getStoredAdditions();
-      setAdditions(updatedAdds);
-      setAddName('');
-      setAddPrice('');
+      setAdditions(updatedAdds); setAddName(''); setAddPrice('');
     }
   };
 
   const handleDeleteAddition = (id: string) => {
-    showConfirmPopup(
-      'Excluir Adicional', 
-      'Deseja excluir este adicional permanentemente do catálogo?', 
-      async () => {
-        const success = await deleteStoredAddition(id);
-        if (success) {
-          setAdditions(additions.filter(a => a.id !== id));
-        }
-      }
-    );
+    showConfirmPopup('Excluir Adicional', 'Deseja excluir este adicional?', async () => {
+      const success = await deleteStoredAddition(id);
+      if (success) setAdditions(additions.filter(a => a.id !== id));
+    });
   };
 
   const handleSaveFlavor = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!flavorName.trim()) return;
-
-    const success = await saveStoredFlavor({
-      name: flavorName,
-      categoryLinked: flavorCategoryLinked
-    });
-
+    const success = await saveStoredFlavor({ name: flavorName, categoryLinked: flavorCategoryLinked });
     if (success) {
       const updatedFlavs = await getStoredFlavors();
-      setFlavors(updatedFlavs);
-      setFlavorName('');
+      setFlavors(updatedFlavs); setFlavorName('');
     }
   };
 
   const handleDeleteFlavor = (id: string) => {
-    showConfirmPopup(
-      'Excluir Sabor', 
-      'Deseja excluir este sabor de forma definitiva do cardápio?', 
-      async () => {
-        const success = await deleteStoredFlavor(id);
-        if (success) {
-          setFlavors(flavors.filter(f => f.id !== id));
-        }
-      }
-    );
+    showConfirmPopup('Excluir Sabor', 'Deseja excluir este sabor?', async () => {
+      const success = await deleteStoredFlavor(id);
+      if (success) setFlavors(flavors.filter(f => f.id !== id));
+    });
   };
 
   const resetProductForm = () => {
     setEditingId(null); setProdName(''); setProdPrice(''); setProdDesc(''); setProdImage('');
-    setAllowCustom(false); setIsPromo(false); setPromoPrice(''); setIsVariable(false); setVariants([]);
-    setImageFile(null);
+    setAllowCustom(false); setIsPromo(false); setPromoPrice(''); setIsVariable(false); setVariants([]); setImageFile(null);
   };
+
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.desc.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = filterCategory ? p.category === filterCategory : true;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <div className={styles.adminContainer}>
@@ -378,98 +319,163 @@ const handleDeleteCategory = (id: string) => {
       </div>
 
       {activeTab === 'list' && (
-        <div className={styles.dashboardSplit}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
-          {/* SEÇÃO PRINCIPAL DE PRODUTOS */}
-          <div className={styles.tableResponsive}>
-            <div className={styles.tableHeaderSection}>
-              <h3>Catálogo de Itens Ativos</h3>
-              <span className={styles.counterBadge}>{products.length} itens</span>
-            </div>
-            <table className={styles.adminTable}>
-              <thead>
-                <tr>
-                  <th>Foto</th>
-                  <th>Item</th>
-                  <th>Preço</th>
-                  <th>Status</th>
-                  <th style={{ textAlign: 'center' }}>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map(p => (
-                  <tr key={p.id} className={p.disponivel === false ? styles.rowDisabled : ''}>
-                    <td><img src={p.image} alt={p.name} className={styles.tableImg} /></td>
-                    <td>
-                      <span className={styles.primaryText}>{p.name}</span>
-                      <div className={styles.secondaryRow}>
-                        <span className={styles.miniCategoryBadge}>{p.category}</span>
-                        {p.isPromo && <span className={styles.miniPromoBadge}>OFERTA</span>}
-                      </div>
-                    </td>
-                    <td>
-                      <span className={styles.priceText}>
-                        R$ {(p.isPromo && p.promoPrice ? p.promoPrice : p.price).toFixed(2).replace('.', ',')}
-                      </span>
-                    </td>
-                    <td>
-                      <button 
-                        className={`${styles.btnStatus} ${p.disponivel !== false ? styles.statusActive : styles.statusPaused}`} 
-                        onClick={() => handleToggleStatus(p.id)}
-                      >
-                        {p.disponivel !== false ? 'Disponível' : 'Indisponível'}
-                      </button>
-                    </td>
-                    <td>
-                      <div className={styles.actionGroup}>
-                        <button className={styles.btnEdit} onClick={() => handleEditProduct(p)} title="Editar">
-                          ✎
-                        </button>
-                        <button className={styles.btnDelete} onClick={() => handleDeleteProduct(p.id)} title="Excluir">
-                          X
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {/* CONFIGURAÇÕES DA LOJA (STATUS E TEMPO) */}
+          {storeConfig && (
+            <div className={styles.storeConfigCard}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+                <div>
+                  <h3 style={{ margin: '0 0 5px 0', color: '#f4f5f6', fontSize: '1.05rem', fontWeight: 600 }}>Status do Delivery</h3>
+                  <p style={{ margin: 0, color: '#777e90', fontSize: '0.85rem' }}>Abra ou feche sua loja para receber pedidos no site</p>
+                </div>
+                <button 
+                  onClick={handleToggleStoreStatus}
+                  className={`${styles.btnStatus} ${storeConfig.aberto ? styles.statusActive : styles.statusPaused}`}
+                  style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+                >
+                  <i className={`fa-solid ${storeConfig.aberto ? 'fa-door-open' : 'fa-door-closed'}`}></i> {storeConfig.aberto ? 'Loja Aberta (Pausar)' : 'Loja Fechada (Abrir)'}
+                </button>
+              </div>
 
-          {/* SEÇÃO DE CATEGORIAS */}
-          <div className={styles.tableResponsive}>
-            <div className={styles.tableHeaderSection}>
-              <h3>Estrutura de Categorias</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ color: '#b1b5c3', fontSize: '0.85rem', fontWeight: 600 }}>Tempo Médio de Entrega (min)</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input 
+                      type="number"
+                      className={styles.adminFilterInput}
+                      style={{ width: '90px' }}
+                      value={deliveryTimeInput}
+                      onChange={(e) => setDeliveryTimeInput(e.target.value)}
+                    />
+                    <button 
+                      className={styles.btnSave} 
+                      style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                      onClick={handleUpdateDeliveryTime}
+                    >
+                      Salvar Tempo
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <table className={styles.adminTable}>
-              <thead>
-                <tr>
-                  <th>Nome Interno</th>
-                  <th>Identificador (Slug)</th>
-                  <th style={{ textAlign: 'center' }}>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categories.map(c => (
-                  <tr key={c.id}>
-                    <td><span className={styles.primaryText}>{c.label}</span></td>
-                    <td><span className={styles.slugCode}>/{c.id}</span></td>
-                    <td>
-                      <div className={styles.actionGroup}>
-                        <button className={styles.btnEdit} onClick={() => handleEditCategory(c)} title="Editar Nome">
-                          ✎
-                        </button>
-                        <button className={styles.btnDelete} onClick={() => handleDeleteCategory(c.id)} title="Excluir Completa">
-                          X
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          )}
 
+          <div className={styles.dashboardSplit}>
+            {/* SEÇÃO PRINCIPAL DE PRODUTOS */}
+            <div className={styles.tableResponsive}>
+              <div className={styles.tableHeaderSection}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <h3>Catálogo de Itens Ativos</h3>
+                  <span className={styles.counterBadge}>{filteredProducts.length} itens</span>
+                </div>
+                
+                {/* Controles de Filtro */}
+                <div className={styles.filterControls}>
+                  <input 
+                    type="text" 
+                    placeholder="Buscar produto..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className={styles.adminFilterInput}
+                  />
+                  <select 
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                    className={styles.adminFilterInput}
+                  >
+                    <option value="">Todas as Categorias</option>
+                    {categories.map(c => (
+                      <option key={c.id} value={c.id}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <table className={styles.adminTable}>
+                <thead>
+                  <tr>
+                    <th>Foto</th>
+                    <th>Item</th>
+                    <th>Preço</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: 'center' }}>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProducts.map(p => (
+                    <tr key={p.id} className={p.disponivel === false ? styles.rowDisabled : ''}>
+                      <td><img src={p.image} alt={p.name} className={styles.tableImg} /></td>
+                      <td>
+                        <span className={styles.primaryText}>{p.name}</span>
+                        <div className={styles.secondaryRow}>
+                          <span className={styles.miniCategoryBadge}>{p.category}</span>
+                          {p.isPromo && <span className={styles.miniPromoBadge}>OFERTA</span>}
+                        </div>
+                      </td>
+                      <td>
+                        <span className={styles.priceText}>
+                          R$ {(p.isPromo && p.promoPrice ? p.promoPrice : p.price).toFixed(2).replace('.', ',')}
+                        </span>
+                      </td>
+                      <td>
+                        <button 
+                          className={`${styles.btnStatus} ${p.disponivel !== false ? styles.statusActive : styles.statusPaused}`} 
+                          onClick={() => handleToggleStatus(p.id)}
+                        >
+                          {p.disponivel !== false ? 'Disponível' : 'Indisponível'}
+                        </button>
+                      </td>
+                      <td>
+                        <div className={styles.actionGroup}>
+                          <button className={styles.btnEdit} onClick={() => handleEditProduct(p)} title="Editar">✎</button>
+                          <button className={styles.btnDelete} onClick={() => handleDeleteProduct(p.id)} title="Excluir">X</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredProducts.length === 0 && (
+                    <tr>
+                      <td colSpan={5} style={{ textAlign: 'center', padding: '30px', color: '#777e90' }}>
+                        Nenhum produto encontrado na busca.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* SEÇÃO DE CATEGORIAS */}
+            <div className={styles.tableResponsive}>
+              <div className={styles.tableHeaderSection}>
+                <h3>Estrutura de Categorias</h3>
+              </div>
+              <table className={styles.adminTable}>
+                <thead>
+                  <tr>
+                    <th>Nome Interno</th>
+                    <th>Identificador (Slug)</th>
+                    <th style={{ textAlign: 'center' }}>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categories.map(c => (
+                    <tr key={c.id}>
+                      <td><span className={styles.primaryText}>{c.label}</span></td>
+                      <td><span className={styles.slugCode}>/{c.id}</span></td>
+                      <td>
+                        <div className={styles.actionGroup}>
+                          <button className={styles.btnEdit} onClick={() => handleEditCategory(c)} title="Editar Nome">✎</button>
+                          <button className={styles.btnDelete} onClick={() => handleDeleteCategory(c.id)} title="Excluir Completa">X</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
 
@@ -622,9 +628,7 @@ const handleDeleteCategory = (id: string) => {
                       <td><span className={styles.priceText}>R$ {a.price.toFixed(2).replace('.', ',')}</span></td>
                       <td><span className={styles.miniCategoryBadge}>{a.categoryLinked}</span></td>
                       <td style={{ textAlign: 'center' }}>
-                        <button className={styles.btnDeleteTableInline} onClick={() => handleDeleteAddition(a.id)}>
-                          X
-                        </button>
+                        <button className={styles.btnDeleteTableInline} onClick={() => handleDeleteAddition(a.id)}>X</button>
                       </td>
                     </tr>
                   ))}
@@ -667,9 +671,7 @@ const handleDeleteCategory = (id: string) => {
                       <td><span className={styles.primaryText}>{f.name}</span></td>
                       <td><span className={styles.miniCategoryBadge} style={{ borderColor: 'var(--neon-yellow)', color: 'var(--neon-yellow)' }}>{f.categoryLinked}</span></td>
                       <td style={{ textAlign: 'center' }}>
-                        <button className={styles.btnDeleteTableInline} onClick={() => handleDeleteFlavor(f.id)}>
-                          X
-                        </button>
+                        <button className={styles.btnDeleteTableInline} onClick={() => handleDeleteFlavor(f.id)}>X</button>
                       </td>
                     </tr>
                   ))}
@@ -701,7 +703,6 @@ const handleDeleteCategory = (id: string) => {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
           <div style={{ background: '#18191d', border: '1px solid #232627', padding: '24px', borderRadius: '16px', width: '90%', maxWidth: '400px', fontFamily: 'sans-serif' }}>
             <h3 style={{ margin: '0 0 10px 0', color: '#f4f5f6', fontSize: '1.2rem', fontWeight: 700 }}>{popup.title}</h3>
-            {/* O estilo white-space: pre-wrap foi adicionado para respeitar quebras de linha em mensagens longas */}
             <p style={{ color: '#b1b5c3', fontSize: '0.9rem', lineHeight: '1.5', margin: '0 0 20px 0', whiteSpace: 'pre-wrap' }}>{popup.message}</p>
             
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
