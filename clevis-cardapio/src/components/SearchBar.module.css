@@ -1,31 +1,22 @@
 /* SearchBar.module.css */
 .searchContainer {
     position: relative;
-    width: 100%;
+    width: 65%;
     margin-bottom: 25px;
      max-width: 1000px; /* Define um limite máximo */
-    margin-left: auto;
-    margin-right: auto;
+    margin-left: 10px;
     margin-top: 5px;
 }
 
-.searchIcon {
-    position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-gray);
-    font-size: 1.1rem;
-}
 
 .searchContainer input {
     width: 100%;
-    padding: 14px 14px 14px 45px;
+    padding: 14px 4px 14px 10px;
     background: #141414;
     border: 1px solid rgba(255,255,255,0.06);
     border-radius: 12px;
     color: white;
-    font-size: 0.95rem;
+    font-size: 0.65rem;
     outline: none;
     transition: all 0.3s ease;
 }

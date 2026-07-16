@@ -12,7 +12,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ value, onChange }) => {
       <i className={`fa-solid fa-magnifying-glass ${styles.searchIcon}`}></i>
       <input
         type="text"
-        placeholder="🔍 O que você quer comer hoje? (Ex: Bacon, Pastéis...)"
+        placeholder="🔍 Pesquisar"
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />

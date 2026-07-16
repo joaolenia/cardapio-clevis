@@ -3,7 +3,7 @@
 .categoriesNav {
     display: flex;
     gap: 12px;
-    margin-bottom: 25px;
+    margin-bottom: 15px;
     overflow-x: auto;
     scroll-behavior: smooth;
     padding-bottom: 5px;
@@ -13,6 +13,7 @@
     margin-left: auto;
     margin-right: auto;
     width: 95%; /* Garante margem nas laterais em telas muito pequenas */
+    margin-top: -10px; /* Espaçamento superior */
 }   
 
 .categoriesNav::-webkit-scrollbar {
