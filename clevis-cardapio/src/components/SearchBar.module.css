@@ -1,7 +1,7 @@
 /* SearchBar.module.css */
 .searchContainer {
     position: relative;
-    width: 65%;
+    width: 95%;
     margin-bottom: 25px;
      max-width: 1000px; /* Define um limite máximo */
     margin-left: 10px;
