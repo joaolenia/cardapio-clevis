@@ -75,7 +75,7 @@ export const App: React.FC = () => {
         paddingTop: '10px' 
       }}>
         <div style={{ position: 'absolute', top: '15px', right: '20px', zIndex: 10 }}>
-          <button onClick={() => setShowLoginModal(true)} style={{ background: '#18191d', color: '#b1b5c3', border: '1px solid #232627', borderRadius: '10px', padding: '8px 16px', cursor: 'pointer' }}>
+          <button onClick={() => setShowLoginModal(true)} style={{ background: '#00000029', color: '#b1b5c318', border: '1px solid #232627ac', borderRadius: '10px', padding: '8px 16px', cursor: 'pointer' }}>
             <i className="fa-solid fa-lock"></i> Admin
           </button>
         </div>
