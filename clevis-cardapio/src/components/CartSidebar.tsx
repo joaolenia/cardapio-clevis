@@ -137,7 +137,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
 
       const notesText = item.notes ? `\n   ↳ *Obs:* ${item.notes}` : '';
 
-      return `🔸 *${item.quantity}x ${item.product.name}*${variantText} - R$ ${totalLinePrice.toFixed(2).replace('.', ',')}${additionsText}${notesText}`;
+      return `🔸 *${item.quantity} ${item.product.name}*${variantText} - R$ ${totalLinePrice.toFixed(2).replace('.', ',')}${additionsText}${notesText}`;
     }).join('\n\n');
 
     let addressText = '';
