@@ -40,7 +40,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
 
   // Configurações da Loja
   const [storeConfig, setStoreConfig] = useState<StoreConfig | null>(null);
-  const [deliveryTimeInput, setDeliveryTimeInput] = useState('');
+  // const [deliveryTimeInput, setDeliveryTimeInput] = useState('');
 
   // Estados dos Filtros
   const [searchQuery, setSearchQuery] = useState('');
@@ -90,7 +90,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
       const config = await getStoreConfiguration();
       if (config) {
         setStoreConfig(config);
-        setDeliveryTimeInput(config.entrega.toString());
+        // setDeliveryTimeInput(config.entrega.toString());
       }
 
       const prods = await getStoredProducts();
@@ -123,15 +123,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     }
   };
 
-  const handleUpdateDeliveryTime = async () => {
-    if (!storeConfig) return;
-    const updated = { ...storeConfig, entrega: Number(deliveryTimeInput) };
-    const success = await saveStoreConfiguration(updated);
-    if (success) {
-      setStoreConfig(updated);
-      showAlertPopup('Tempo Atualizado', `O tempo estimado foi atualizado para ${updated.entrega} minutos.`);
-    }
-  };
+  // const handleUpdateDeliveryTime = async () => {
+  //   if (!storeConfig) return;
+  //   const updated = { ...storeConfig, entrega: Number(deliveryTimeInput) };
+  //   const success = await saveStoreConfiguration(updated);
+  //   if (success) {
+  //     setStoreConfig(updated);
+  //     showAlertPopup('Tempo Atualizado', `O tempo estimado foi atualizado para ${updated.entrega} minutos.`);
+  //   }
+  // };
 
   const handleToggleStatus = async (id: number) => {
     const targetProduct = products.find(p => p.id === id);
@@ -337,8 +337,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                   <i className={`fa-solid ${storeConfig.aberto ? 'fa-door-open' : 'fa-door-closed'}`}></i> {storeConfig.aberto ? 'Loja Aberta (Pausar)' : 'Loja Fechada (Abrir)'}
                 </button>
               </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              {/* Para voltar o controle do tempo de entrega, descomente o código abaixo  */}
+              {/* <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ color: '#b1b5c3', fontSize: '0.85rem', fontWeight: 600 }}>Tempo Médio de Entrega (min)</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
@@ -358,7 +358,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                     </button>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
           )}
 

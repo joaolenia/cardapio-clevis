@@ -1,42 +1,94 @@
-/* CategoryNav.module.css */
-/* Alteração em src/components/CategoryNav.module.css */
+/* =========================================
+   CARROSSEL COM AUTO-SCROLL PREMIUM
+========================================= */
+
 .categoriesNav {
     display: flex;
-    gap: 12px;
-    margin-bottom: 15px;
+    gap: 16px; /* Mais espaço para respirar */
     overflow-x: auto;
-    scroll-behavior: smooth;
-    padding-bottom: 5px;
     
-    /* Adicionando limitação de largura e centralização */
-    max-width: 1000px; /* Define um limite máximo */
+    padding: 15px 20px 25px 20px; /* Padding extra em baixo para a sombra não cortar */
+    margin-top: -15px; 
+    
+    max-width: 1000px; 
     margin-left: auto;
     margin-right: auto;
-    width: 95%; /* Garante margem nas laterais em telas muito pequenas */
-    margin-top: -10px; /* Espaçamento superior */
-}   
+    width: 100%; 
+    box-sizing: border-box;
 
+    /* Esconde a barra de rolagem para um visual de App Limpo */
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+} 
+
+/* Esconde a barra de rolagem no Chrome/Safari/Edge */
 .categoriesNav::-webkit-scrollbar {
-    background: #373636; /* Cor de fundo da barra de rolagem */
-    height: 8px; /* Altura da barra de rolagem */
-    border-radius: 14px; /* Bordas arredondadas */   
+    display: none; 
 }
 
+/* =========================================
+   DESIGN DOS BOTÕES (INATIVO)
+========================================= */
 .catBtn {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.08);
-    color: var(--text-white);
-    padding: 12px 24px;
-    border-radius: 30px;
+    flex-shrink: 0; /* Impede que o botão seja esmagado */
+    
+    /* Fundo escuro premium (Glassmorphism) */
+    background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(0,0,0,0.4));
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.05);
+    
+    color: #8c92a6; /* Cinza metálico moderno */
+    padding: 14px 28px;
+    border-radius: 40px; /* Formato pílula longo */
     cursor: pointer;
-    font-weight: 600;
+    font-weight: 700;
     white-space: nowrap;
-    font-size: 0.8rem;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    
+    /* Animação suave para todas as transições */
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* Efeito ao encostar o mouse (só em PC) */
+.catBtn:hover {
+    border-color: rgba(255, 94, 0, 0.4);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+/* =========================================
+   DESIGN DO BOTÃO (ATIVO / CLICADO)
+========================================= */
 .catBtn.active {
-    background: var(--neon-orange);
-    border-color: var(--neon-orange);
-    box-shadow: 0 4px 15px rgba(255, 94, 0, 0.4);
+    /* Degradê explosivo Clevi's */
+    background: linear-gradient(135deg, var(--neon-orange), #ff3c00);
+    color: #fff;
+    border-color: transparent;
+    
+    /* Efeito 3D - Cresce e flutua */
+    transform: scale(1.1) translateY(-3px); 
+    
+    /* Brilho intenso no fundo e brilho interno no topo */
+    box-shadow: 
+        0 10px 25px rgba(255, 94, 0, 0.4), 
+        inset 0 2px 4px rgba(255, 255, 255, 0.3);
+        
+    z-index: 2; /* Garante que fique por cima dos outros ao crescer */
+}
+
+/* =========================================
+   AJUSTES PARA CELULAR
+========================================= */
+@media (max-width: 480px) {
+    .categoriesNav {
+        padding: 15px 10px 25px 10px; /* Diminui padding lateral na tela pequena */
+        gap: 12px;
+    }
+    
+    .catBtn {
+        padding: 12px 20px;
+        font-size: 0.75rem;
+    }
 }
