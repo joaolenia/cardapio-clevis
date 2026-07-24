@@ -60,6 +60,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
   const [variants, setVariants] = useState<ProductOption[]>([]);
   const [varName, setVarName] = useState('');
   const [varPrice, setVarPrice] = useState('');
+  const [editingVariantIndex, setEditingVariantIndex] = useState<number | null>(null); // NOVO: Controle de edição de variante
 
   // Estados para Upload de Arquivo
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -144,10 +145,38 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     if (success) setProducts(products.map(p => p.id === id ? updatedProduct : p));
   };
 
+  // Lógica Melhorada para Adicionar e Editar Variantes
   const handleAddVariant = () => {
     if (!varName || !varPrice) return;
-    setVariants([...variants, { name: varName, price: parseFloat(varPrice) }]);
-    setVarName(''); setVarPrice('');
+    
+    if (editingVariantIndex !== null) {
+      // Atualiza a variante existente
+      const updatedVariants = [...variants];
+      updatedVariants[editingVariantIndex] = { name: varName, price: parseFloat(varPrice) };
+      setVariants(updatedVariants);
+      setEditingVariantIndex(null);
+    } else {
+      // Adiciona uma nova variante
+      setVariants([...variants, { name: varName, price: parseFloat(varPrice) }]);
+    }
+    
+    setVarName(''); 
+    setVarPrice('');
+  };
+
+  const handleEditVariant = (index: number, variant: ProductOption) => {
+    setVarName(variant.name);
+    setVarPrice(variant.price.toString());
+    setEditingVariantIndex(index);
+  };
+
+  const handleRemoveVariant = (index: number) => {
+    setVariants(variants.filter((_, i) => i !== index));
+    if (editingVariantIndex === index) {
+      setEditingVariantIndex(null);
+      setVarName('');
+      setVarPrice('');
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -199,6 +228,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     setAllowCustom(!!p.allowCustomization); setIsPromo(!!p.isPromo);
     setPromoPrice(p.promoPrice?.toString() || ''); setIsVariable(!!p.isVariable);
     setVariants(p.options || []); setImageFile(null); setActiveTab('product_form');
+    setEditingVariantIndex(null); setVarName(''); setVarPrice('');
   };
 
   const handleDeleteProduct = (id: number) => {
@@ -283,6 +313,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
   const resetProductForm = () => {
     setEditingId(null); setProdName(''); setProdPrice(''); setProdDesc(''); setProdImage('');
     setAllowCustom(false); setIsPromo(false); setPromoPrice(''); setIsVariable(false); setVariants([]); setImageFile(null);
+    setEditingVariantIndex(null); setVarName(''); setVarPrice('');
   };
 
   const filteredProducts = products.filter(p => {
@@ -567,15 +598,41 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
               <div className={styles.variantInputs}>
                 <input type="text" value={varName} onChange={e => setVarName(e.target.value)} placeholder="Ex: Pizza Grande (8 Fatias)" />
                 <input type="number" step="0.01" value={varPrice} onChange={e => setVarPrice(e.target.value)} placeholder="Preço R$" />
-                <button type="button" onClick={handleAddVariant} className={styles.btnPlusVariant}>
-                  +
+                <button 
+                  type="button" 
+                  onClick={handleAddVariant} 
+                  className={styles.btnPlusVariant}
+                  style={editingVariantIndex !== null ? { backgroundColor: '#39ff14', color: '#121214' } : {}}
+                >
+                  {editingVariantIndex !== null ? '✓' : '+'}
                 </button>
               </div>
               <ul className={styles.variantList}>
                 {variants.map((v, i) => (
                   <li key={i}>
-                    <span>{v.name}</span>
-                    <strong>R$ {v.price.toFixed(2).replace('.', ',')}</strong>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span>{v.name}</span>
+                      <strong style={{ color: 'var(--neon-yellow)' }}>R$ {v.price.toFixed(2).replace('.', ',')}</strong>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button 
+                        type="button" 
+                        className={styles.btnDeleteTableInline} 
+                        onClick={() => handleEditVariant(i, v)} 
+                        title="Editar"
+                        style={{ color: 'var(--neon-yellow)', borderColor: 'var(--neon-yellow)' }}
+                      >
+                        ✎
+                      </button>
+                      <button 
+                        type="button" 
+                        className={styles.btnDeleteTableInline} 
+                        onClick={() => handleRemoveVariant(i)} 
+                        title="Excluir"
+                      >
+                        X
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
