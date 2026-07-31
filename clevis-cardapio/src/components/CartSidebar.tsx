@@ -13,7 +13,7 @@ const NEIGHBORHOODS = [
   { id: 'centro', name: 'Centro', fee: 4.00 },
   { id: 'bairro1', name: 'Bairro São Jorge', fee: 5.00 },
   { id: 'bairro1', name: 'Bairro Cecília Otto', fee: 5.00 },
-  { id: 'bairro2', name: 'Bairro São josé ', fee: 7.00 },
+  { id: 'bairro2', name: 'Bairro São José ', fee: 7.00 },
   { id: 'bairro2', name: 'Populares ', fee: 10.00 },
   { id: 'bairro4', name: 'Informar no Chat (Preço a combinar)', fee: 0.00 },
 ];
