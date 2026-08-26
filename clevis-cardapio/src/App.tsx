@@ -24,6 +24,19 @@ export const App: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
+    import('react-facebook-pixel').then((module) => {
+      // Pega o módulo corretamente, independentemente de como o Vite o empacota
+      const ReactPixel = module.default || module;
+      
+      ReactPixel.init('1426716772852673', undefined, {
+        autoConfig: true,
+        debug: false,
+      });
+      ReactPixel.pageView();
+    });
+  }, []);
+
+  useEffect(() => {
     const loadData = async () => {
       if (view === 'client') {
         const prods = await getStoredProducts();
