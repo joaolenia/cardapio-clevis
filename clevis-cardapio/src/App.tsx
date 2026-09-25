@@ -25,7 +25,6 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     import('react-facebook-pixel').then((module) => {
-      // Pega o módulo corretamente, independentemente de como o Vite o empacota
       const ReactPixel = module.default || module;
       
       ReactPixel.init('1426716772852673', undefined, {
