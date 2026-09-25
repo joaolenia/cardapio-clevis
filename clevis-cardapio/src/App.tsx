@@ -11,6 +11,13 @@ import type { Product, Category } from './data/products';
 import { CartProvider } from './context/CartContext';
 import { Footer } from './components/Footer';
 
+// Declaração global para o TypeScript reconhecer o Pixel nativo do Facebook
+declare global {
+  interface Window {
+    fbq: any;
+  }
+}
+
 export const App: React.FC = () => {
   const [view, setView] = useState<'client' | 'admin'>('client');
   const [activeCategory, setActiveCategory] = useState('');
@@ -23,16 +30,11 @@ export const App: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
 
+  // Disparo do evento PageView usando o script nativo que já está no index.html
   useEffect(() => {
-    import('react-facebook-pixel').then((module) => {
-      const ReactPixel = module.default || module;
-      
-      ReactPixel.init('1426716772852673', undefined, {
-        autoConfig: true,
-        debug: false,
-      });
-      ReactPixel.pageView();
-    });
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'PageView');
+    }
   }, []);
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export const App: React.FC = () => {
       }
     };
     loadData();
-  }, [view]);
+  }, [view, activeCategory]);
    
   const promoProducts = products.filter(p => p.isPromo && p.disponivel !== false);
  
