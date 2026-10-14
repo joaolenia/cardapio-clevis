@@ -12,7 +12,6 @@ import {
   getStoredFlavors,
   saveStoredFlavor,
   deleteStoredFlavor,
-  uploadProductImage,
   getStoreConfiguration,
   saveStoreConfiguration
 } from '../data/products';
@@ -32,6 +31,7 @@ interface PopupState {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
+  
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [additions, setAdditions] = useState<CustomizationOption[]>([]);
@@ -40,7 +40,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
 
   // Configurações da Loja
   const [storeConfig, setStoreConfig] = useState<StoreConfig | null>(null);
-  // const [deliveryTimeInput, setDeliveryTimeInput] = useState('');
 
   // Estados dos Filtros
   const [searchQuery, setSearchQuery] = useState('');
@@ -60,7 +59,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
   const [variants, setVariants] = useState<ProductOption[]>([]);
   const [varName, setVarName] = useState('');
   const [varPrice, setVarPrice] = useState('');
-  const [editingVariantIndex, setEditingVariantIndex] = useState<number | null>(null); // NOVO: Controle de edição de variante
+  const [editingVariantIndex, setEditingVariantIndex] = useState<number | null>(null);
 
   // Estados para Upload de Arquivo
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -91,7 +90,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
       const config = await getStoreConfiguration();
       if (config) {
         setStoreConfig(config);
-        // setDeliveryTimeInput(config.entrega.toString());
       }
 
       const prods = await getStoredProducts();
@@ -113,7 +111,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     loadAdminData();
   }, [activeTab, editingId]);
 
-  // Controles da Loja (Abrir/Fechar e Tempo)
+  // Controles da Loja
   const handleToggleStoreStatus = async () => {
     if (!storeConfig) return;
     const updated = { ...storeConfig, aberto: !storeConfig.aberto };
@@ -123,16 +121,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
       showAlertPopup('Status Atualizado', updated.aberto ? 'Sua loja agora está ABERTA para pedidos!' : 'Sua loja agora está FECHADA para pedidos!');
     }
   };
-
-  // const handleUpdateDeliveryTime = async () => {
-  //   if (!storeConfig) return;
-  //   const updated = { ...storeConfig, entrega: Number(deliveryTimeInput) };
-  //   const success = await saveStoreConfiguration(updated);
-  //   if (success) {
-  //     setStoreConfig(updated);
-  //     showAlertPopup('Tempo Atualizado', `O tempo estimado foi atualizado para ${updated.entrega} minutos.`);
-  //   }
-  // };
 
   const handleToggleStatus = async (id: number) => {
     const targetProduct = products.find(p => p.id === id);
@@ -145,18 +133,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     if (success) setProducts(products.map(p => p.id === id ? updatedProduct : p));
   };
 
-  // Lógica Melhorada para Adicionar e Editar Variantes
+  // Variantes
   const handleAddVariant = () => {
     if (!varName || !varPrice) return;
     
     if (editingVariantIndex !== null) {
-      // Atualiza a variante existente
       const updatedVariants = [...variants];
       updatedVariants[editingVariantIndex] = { name: varName, price: parseFloat(varPrice) };
       setVariants(updatedVariants);
       setEditingVariantIndex(null);
     } else {
-      // Adiciona uma nova variante
       setVariants([...variants, { name: varName, price: parseFloat(varPrice) }]);
     }
     
@@ -183,16 +169,42 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     if (e.target.files && e.target.files[0]) setImageFile(e.target.files[0]);
   };
 
+  // --- NOVA FUNÇÃO DO CLOUDINARY ---
+  const uploadParaCloudinary = async (file: File): Promise<string | null> => {
+    const cloudName = "pccszity";
+    const uploadPreset = "fotos_cardapio";
+    const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+    
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", uploadPreset);
+    
+    try {
+      const resposta = await fetch(url, {
+        method: "POST",
+        body: formData
+      });
+      
+      const dados = await resposta.json();
+      return dados.secure_url; 
+    } catch (erro) {
+      console.error("Erro no upload para o Cloudinary:", erro);
+      return null;
+    }
+  };
+
+  // --- UPDATE NO SALVAMENTO DO PRODUTO ---
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsUploading(true);
     let finalImageUrl = prodImage;
 
     if (imageFile) {
-      const uploadedUrl = await uploadProductImage(imageFile);
-      if (uploadedUrl) finalImageUrl = uploadedUrl;
-      else {
-        showAlertPopup('Erro no Upload', 'Falha ao processar e salvar a imagem.');
+      const uploadedUrl = await uploadParaCloudinary(imageFile);
+      if (uploadedUrl) {
+        finalImageUrl = uploadedUrl;
+      } else {
+        showAlertPopup('Erro no Upload', 'Falha ao processar e salvar a imagem no Cloudinary.');
         setIsUploading(false); return;
       }
     } else if (!editingId) {
@@ -206,7 +218,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
       price: isVariable ? (variants[0]?.price || 0) : parseFloat(prodPrice),
       category: prodCategory,
       desc: prodDesc,
-      image: finalImageUrl,
+      image: finalImageUrl, // Usa a URL nova do Cloudinary
       allowCustomization: allowCustom,
       isVariable: isVariable,
       options: isVariable ? variants : undefined,
@@ -218,8 +230,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const success = await saveStoredProduct(productData);
     setIsUploading(false);
 
-    if (success) { resetProductForm(); setActiveTab('list'); }
-    else showAlertPopup('Erro de Sincronização', 'Erro ao sincronizar dados com o Supabase.');
+    if (success) { 
+      resetProductForm(); 
+      setActiveTab('list'); 
+    } else {
+      showAlertPopup('Erro de Sincronização', 'Erro ao sincronizar dados com o Supabase.');
+    }
   };
 
   const handleEditProduct = (p: Product) => {
@@ -352,7 +368,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
       {activeTab === 'list' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
-          {/* CONFIGURAÇÕES DA LOJA (STATUS E TEMPO) */}
           {storeConfig && (
             <div className={styles.storeConfigCard}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
@@ -368,33 +383,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                   <i className={`fa-solid ${storeConfig.aberto ? 'fa-door-open' : 'fa-door-closed'}`}></i> {storeConfig.aberto ? 'Loja Aberta (Pausar)' : 'Loja Fechada (Abrir)'}
                 </button>
               </div>
-              {/* Para voltar o controle do tempo de entrega, descomente o código abaixo  */}
-              {/* <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ color: '#b1b5c3', fontSize: '0.85rem', fontWeight: 600 }}>Tempo Médio de Entrega (min)</label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <input 
-                      type="number"
-                      className={styles.adminFilterInput}
-                      style={{ width: '90px' }}
-                      value={deliveryTimeInput}
-                      onChange={(e) => setDeliveryTimeInput(e.target.value)}
-                    />
-                    <button 
-                      className={styles.btnSave} 
-                      style={{ padding: '8px 16px', fontSize: '0.85rem' }}
-                      onClick={handleUpdateDeliveryTime}
-                    >
-                      Salvar Tempo
-                    </button>
-                  </div>
-                </div>
-              </div> */}
             </div>
           )}
 
           <div className={styles.dashboardSplit}>
-            {/* SEÇÃO PRINCIPAL DE PRODUTOS */}
             <div className={styles.tableResponsive}>
               <div className={styles.tableHeaderSection}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -402,7 +394,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                   <span className={styles.counterBadge}>{filteredProducts.length} itens</span>
                 </div>
                 
-                {/* Controles de Filtro */}
                 <div className={styles.filterControls}>
                   <input 
                     type="text" 
@@ -477,7 +468,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
               </table>
             </div>
 
-            {/* SEÇÃO DE CATEGORIAS */}
             <div className={styles.tableResponsive}>
               <div className={styles.tableHeaderSection}>
                 <h3>Estrutura de Categorias</h3>
@@ -541,7 +531,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             <label className={styles.switchLabel}>
               <input type="checkbox" checked={isPromo} onChange={e => setIsPromo(e.target.checked)} />
               <div>
-                <strong>Este produto está em promoção activa?</strong>
+                <strong>Este produto está em promoção ativa?</strong>
                 <p>O item será indexado na aba de ofertas especiais no cabeçalho</p>
               </div>
             </label>
@@ -563,7 +553,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
               </label>
             </div>
             {editingId && !imageFile && (
-              <p className={styles.imageRetentionNotice}>* Deixe vazio se deseja manter a foto atual deste item</p>
+              <p className={styles.imageRetentionNotice}>Deixe vazio se deseja manter a foto atual deste item</p>
             )}
           </div>
 
@@ -647,7 +637,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
       {activeTab === 'customization_form' && (
         <div className={styles.customizationsPanelSplit}>
           
-          {/* FORMULÁRIO + TABELA DE ADICIONAIS */}
           <div className={styles.customBlockCard}>
             <form className={styles.adminFormInner} onSubmit={handleSaveAddition}>
               <h3>Cadastrar Adicional / Complemento</h3>
@@ -694,7 +683,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             </div>
           </div>
 
-          {/* FORMULÁRIO + TABELA DE SABORES */}
           <div className={styles.customBlockCard}>
             <form className={styles.adminFormInner} onSubmit={handleSaveFlavor}>
               <h3>Cadastrar Sabores Disponíveis</h3>
