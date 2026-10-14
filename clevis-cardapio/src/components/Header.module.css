@@ -7,7 +7,7 @@
     justify-content: center;
     text-align: center;
     background:  
-                url('https://smkqpmbmexkedkprfleh.supabase.co/storage/v1/object/public/product-images/products/header.png');
+                url('https://res.cloudinary.com/pccszity/image/upload/f_auto/q_auto/CLEV_IS_Chef_Ember_Logo_Banner.png');
     background-size: 40%;
     background-position: center;
     border-bottom: 4px solid var(--neon-orange);
