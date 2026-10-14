@@ -15,7 +15,7 @@ export const Footer: React.FC = () => {
       </p>
       <p style={{ margin: '5px 0' }}>
         <a href="https://wa.me/5542998259010" target="_blank" rel="noopener noreferrer" style={{ color: '#ff5e00', textDecoration: 'none' }}>
-          Contato: (42) 99825-9010
+          Contato: jgsolucoesemsoftware@gmail.com
         </a>
       </p>
       <p style={{ margin: '5px 0', fontSize: '0.7rem' }}>
